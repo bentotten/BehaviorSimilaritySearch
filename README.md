@@ -1,6 +1,5 @@
-# MyProject
-
-A template for multi-package python project consisting of my favorite setups. This is set up so that each subpackage can be installed and deployed independently, allowing for independent edge and cloud deployments without bloating dependencies.
+# BehaviorSimilaritySearch
+A computer vision project to detect if specific behaviours are present in video segments.
 
 ## Table of Contents
 
@@ -59,7 +58,7 @@ Create and activate the environment:
 
 ```bash
 micromamba create -f environment.yaml
-micromamba activate my-project
+micromamba activate behavior-similarity-search
 ```
 
 Then install the project:
@@ -71,7 +70,7 @@ make build
 To run:
 
 ```bash
-cli
+bss
 ```
 
 To deactivate:
@@ -85,9 +84,9 @@ micromamba deactivate
 Each sub-package has its own `pyproject.toml` and can be installed on its own, without pulling in the entire repository. This allows different parts of the project to run on different devices or instances with only the dependencies they need.
 
 ```bash
-# Core library only
-uv pip install -e "packages/my_library"
+# Core library only (e.g. on an edge device)
+uv pip install -e "packages/behavior_core"
 
-# Application
-uv pip install -e "apps/my_app"
+# CLI app (automatically installs behavior_core as a dependency)
+uv pip install -e "apps/behavior_cli"
 ```

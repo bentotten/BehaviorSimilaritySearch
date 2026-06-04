@@ -1,8 +1,0 @@
-"""my_core — core library for MyProject.
-
-Replace this description with your own.
-"""
-
-from importlib.metadata import version
-
-__version__ = version("my-core")

@@ -35,7 +35,7 @@ Create and activate the environment:
 
 ```bash
 micromamba create -f environment.yaml
-micromamba activate my-project
+micromamba activate behavior-similarity-search
 ```
 
 Then install the project:

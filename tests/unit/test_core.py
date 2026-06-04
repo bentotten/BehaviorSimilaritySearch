@@ -1,13 +1,13 @@
-"""Unit tests for my_core."""
+"""Unit tests for behavior_core."""
 
-import my_core
-from my_core import __version__
-from my_core.main import run
+import behavior_core
+from behavior_core import __version__
+from behavior_core.main import run
 
 
 def test_package_importable() -> None:
-    """Test that my_core is importable."""
-    assert my_core is not None
+    """Test that behavior_core is importable."""
+    assert behavior_core is not None
 
 
 def test_version_defined() -> None:

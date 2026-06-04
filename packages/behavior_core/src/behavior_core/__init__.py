@@ -1,0 +1,5 @@
+"""behavior_core — core library for BehaviorSimilaritySearch."""
+
+from importlib.metadata import version
+
+__version__ = version("behavior-core")

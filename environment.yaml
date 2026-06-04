@@ -1,6 +1,6 @@
 # Manages the conda environment: Python version and any non-Python dependencies
 # (e.g. system libraries, CUDA, BLAS). Pure Python dependencies are in pyproject.toml.
-name: my-project
+name: behavior-similarity-search
 channels:
   - conda-forge
   - defaults

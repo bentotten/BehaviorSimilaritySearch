@@ -1,7 +1,7 @@
-MyProject
-=========
+BehaviorSimilaritySearch
+========================
 
-A Python package. Replace this description with your own.
+A computer vision project to detect if specific behaviours are present in video segments.
 
 .. toctree::
    :maxdepth: 2

@@ -65,10 +65,10 @@ ci: lint check-codestyle type-check test
 
 # Install all workspace packages and dev dependencies
 build:
-	uv pip install -e "packages/my_core"
-	uv pip install -e "apps/my_cli"
+	uv pip install -e "packages/behavior_core"
+	uv pip install -e "apps/behavior_cli"
 	uv pip install -e ".[dev]"
-	@echo "Build complete. Run with 'cli'"
+	@echo "Build complete. Run with 'bss'"
 
 # Generate HTML documentation
 docs: build

@@ -4,13 +4,13 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path("../packages/my_core/src").resolve()))
-sys.path.insert(0, str(Path("../apps/my_cli/src").resolve()))
+sys.path.insert(0, str(Path("../packages/behavior_core/src").resolve()))
+sys.path.insert(0, str(Path("../apps/behavior_cli/src").resolve()))
 
 # -- Project information -----------------------------------------------------
 
-project = "MyProject"
-author = "MyProject Contributors"
+project = "BehaviorSimilaritySearch"
+author = "BehaviorSimilaritySearch Contributors"
 release = "0.1.0"
 
 # -- General configuration ---------------------------------------------------

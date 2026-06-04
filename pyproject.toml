@@ -8,7 +8,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "my-project-dev"
+name = "behavior-similarity-search"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = []
@@ -30,7 +30,7 @@ exclude = ["*"]
 
 [tool.ruff]
 line-length = 100
-src = ["packages/my_core/src", "apps/my_cli/src"]
+src = ["packages/behavior_core/src", "apps/behavior_cli/src"]
 
 [tool.ruff.lint]
 select = [
@@ -46,11 +46,11 @@ select = [
 python_version = "3.12"
 strict = true
 files = [
-    "packages/my_core/src",
-    "apps/my_cli/src",
+    "packages/behavior_core/src",
+    "apps/behavior_cli/src",
     "tests",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=packages/my_core/src --cov=apps/my_cli/src --cov-report=term-missing"
+addopts = "--cov=packages/behavior_core/src --cov=apps/behavior_cli/src --cov-report=term-missing"

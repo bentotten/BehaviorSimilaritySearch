@@ -1,6 +1,6 @@
-"""Entry point for my_core."""
+"""Entry point for behavior_core."""
 
-from my_core import __version__
+from behavior_core import __version__
 
 
 def run() -> None:
@@ -8,7 +8,7 @@ def run() -> None:
 
     Prints the current version of the package to stdout.
     """
-    print(f"MyProject v{__version__}")
+    print(f"BehaviorSimilaritySearch v{__version__}")
 
 
 if __name__ == "__main__":

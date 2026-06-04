@@ -1,15 +1,15 @@
-"""Unit tests for my_cli."""
+"""Unit tests for behavior_cli."""
 
 import argparse
 
-import my_cli
-from my_cli import __version__
-from my_cli.cli import build_parser, main
+import behavior_cli
+from behavior_cli import __version__
+from behavior_cli.cli import build_parser, main
 
 
 def test_package_importable() -> None:
-    """Test that my_cli is importable."""
-    assert my_cli is not None
+    """Test that behavior_cli is importable."""
+    assert behavior_cli is not None
 
 
 def test_version_defined() -> None:
