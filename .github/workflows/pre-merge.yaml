@@ -1,0 +1,69 @@
+name: Pre-merge checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: pre-merge-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  build:
+    name: Pre-merge checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TERM: xterm-256color
+      FORCE_COLOR: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install environment from environment.yaml
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          # See: https://github.com/mamba-org/micromamba-releases
+          micromamba-version: "2.5.0-1"
+          environment-file: environment.yaml
+          init-shell: bash
+          cache-environment: true
+
+      - name: Build
+        shell: micromamba-shell {0}
+        run: make build
+
+      - name: Lint
+        shell: micromamba-shell {0}
+        run: make lint
+
+      - name: Check codestyle
+        shell: micromamba-shell {0}
+        run: make check-codestyle
+
+      - name: Type check
+        shell: micromamba-shell {0}
+        run: make type-check
+
+      - name: Tests
+        shell: micromamba-shell {0}
+        run: make test

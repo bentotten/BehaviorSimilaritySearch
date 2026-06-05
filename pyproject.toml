@@ -1,0 +1,56 @@
+# Root configuration.
+# Manages dev tooling and tool config (ruff, mypy, pytest).
+# Non-Python dependencies (e.g. system libraries, CUDA, BLAS) belong in environment.yaml.
+# Sub-packages are in packages/ and apps/ — each can be installed independently.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "behavior-similarity-search"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff==0.11.12",
+    "mypy==1.16.0",
+    "pytest==8.4.0",
+    "pytest-cov==6.1.0",
+    "sphinx==8.2.3",
+    "sphinx-autodoc-typehints==3.1.0",
+    "furo==2024.8.6",
+]
+
+[tool.setuptools.packages.find]
+where = []
+exclude = ["*"]
+
+[tool.ruff]
+line-length = 100
+src = ["packages/behavior_core/src", "apps/behavior_cli/src"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = [
+    "packages/behavior_core/src",
+    "apps/behavior_cli/src",
+    "tests",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=packages/behavior_core/src --cov=apps/behavior_cli/src --cov-report=term-missing"

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "behavior-cli"
+version = "0.1.0"
+description = "CLI application for BehaviorSimilaritySearch."
+requires-python = ">=3.12"
+dependencies = [
+    "behavior-core",
+]
+
+[project.scripts]
+behavior-similarity-search = "behavior_cli.cli:main"
+bss = "behavior_cli.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
