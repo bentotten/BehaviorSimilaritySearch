@@ -45,6 +45,16 @@ def test_main_no_args_prints_help(
     assert capsys.readouterr().out == build_parser().format_help()
 
 
+def test_main_dispatches_bootstrap(mocker: MockerFixture) -> None:
+    """main() calls bootstrap() with config_path when bootstrap subcommand is used."""
+    mocker.patch("sys.argv", ["bss", "bootstrap"])
+    mock_bootstrap = mocker.patch("bss_cli.cli.bootstrap")
+
+    main()
+
+    mock_bootstrap.assert_called_once_with(DEFAULT_CONFIG_PATH)
+
+
 # ---------------------------------------------------------------------------
 # Parser
 # ---------------------------------------------------------------------------
