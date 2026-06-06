@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "behavior-similarity-search-valkey"
 version = "0.1.0"
-description = "Vector similarity search client for BehaviorSimilaritySearch."
+description = "Valkey (with Vector Similarity Search support) client for BehaviorSimilaritySearch."
 requires-python = ">=3.12"
 dependencies = [
     "behavior-similarity-search-core",
