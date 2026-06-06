@@ -27,6 +27,25 @@ def test_version_defined() -> None:
 
 
 # ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
+
+
+def test_main_no_args_prints_help(
+    capsys: pytest.CaptureFixture[str],
+    mocker: MockerFixture,
+) -> None:
+    """main() with no subcommand prints the full help text."""
+    # sys.argv must be patched so argparse sees an empty argument list.
+    # Without this, argparse reads pytest's own argv (e.g. the test file path)
+    # and exits with an unrecognised argument error.
+    mocker.patch("sys.argv", ["bss"])
+    main()
+    # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
+    assert capsys.readouterr().out == build_parser().format_help()
+
+
+# ---------------------------------------------------------------------------
 # Parser
 # ---------------------------------------------------------------------------
 
@@ -96,18 +115,3 @@ def test_bootstrap_exits_on_connection_failure(mocker: MockerFixture) -> None:
     with pytest.raises(SystemExit) as exc_info:
         bootstrap(DEFAULT_CONFIG_PATH)
     assert exc_info.value.code == 1
-
-
-# ---------------------------------------------------------------------------
-# main
-# ---------------------------------------------------------------------------
-
-
-def test_main_no_args_prints_help(
-    capsys: pytest.CaptureFixture[str],
-    mocker: MockerFixture,
-) -> None:
-    """main() with no subcommand prints help without raising."""
-    mocker.patch("sys.argv", ["bss"])
-    main()
-    assert "bootstrap" in capsys.readouterr().out
