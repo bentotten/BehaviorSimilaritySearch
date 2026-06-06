@@ -19,6 +19,7 @@ dev = [
     "mypy==1.16.0",
     "pytest==8.4.0",
     "pytest-cov==6.1.0",
+    "pytest-mock==3.14.0",
     "sphinx==8.2.3",
     "sphinx-autodoc-typehints==3.1.0",
     "furo==2024.8.6",
@@ -30,7 +31,7 @@ exclude = ["*"]
 
 [tool.ruff]
 line-length = 100
-src = ["packages/behavior_core/src", "apps/behavior_cli/src"]
+src = ["packages/bss_core/src", "packages/bss_valkey/src", "apps/bss_cli/src"]
 
 [tool.ruff.lint]
 select = [
@@ -42,15 +43,21 @@ select = [
     "UP",  # pyupgrade
 ]
 
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
 files = [
-    "packages/behavior_core/src",
-    "apps/behavior_cli/src",
+    "packages/bss_core/src",
+    "packages/bss_valkey/src",
+    "apps/bss_cli/src",
     "tests",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=packages/behavior_core/src --cov=apps/behavior_cli/src --cov-report=term-missing"
+addopts = "--cov=packages/bss_core/src --cov=packages/bss_valkey/src --cov=apps/bss_cli/src --cov-report=term-missing"

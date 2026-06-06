@@ -4,8 +4,8 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path("../packages/behavior_core/src").resolve()))
-sys.path.insert(0, str(Path("../apps/behavior_cli/src").resolve()))
+sys.path.insert(0, str(Path("../packages/bss_core/src").resolve()))
+sys.path.insert(0, str(Path("../apps/bss_cli/src").resolve()))
 
 # -- Project information -----------------------------------------------------
 
@@ -16,11 +16,11 @@ release = "0.1.0"
 # -- General configuration ---------------------------------------------------
 
 extensions = [
-    "sphinx.ext.autodoc",       # Pull docstrings from source
-    "sphinx.ext.napoleon",      # Support Google-style docstrings
-    "sphinx.ext.viewcode",      # Add links to source code
-    "sphinx.ext.intersphinx",   # Link to external docs (e.g. Python stdlib)
-    "sphinx_autodoc_typehints", # Render type hints in docs
+    "sphinx.ext.autodoc",  # Pull docstrings from source
+    "sphinx.ext.napoleon",  # Support Google-style docstrings
+    "sphinx.ext.viewcode",  # Add links to source code
+    "sphinx.ext.intersphinx",  # Link to external docs (e.g. Python stdlib)
+    "sphinx_autodoc_typehints",  # Render type hints in docs
 ]
 
 # Google-style docstrings via napoleon
