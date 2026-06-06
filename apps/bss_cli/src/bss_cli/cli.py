@@ -23,7 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(
         prog="behavior-similarity-search",
-        description="BehaviorSimilaritySearch.",
+        description="Behavior Similarity Search.",
     )
     parser.add_argument(
         "--config_path",
@@ -37,14 +37,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser(
         "bootstrap",
-        help="Bootstrap and verify local infrastructure.",
+        help="Bootstrap the backend search method and verify connections.",
     )
 
     return parser
 
 
 def bootstrap(config_path: Path) -> None:
-    """Bootstrap infrastructure (e.g. Valkey).
+    """Bootstrap Search backend (e.g. Valkey).
 
     Args:
         config_path: Path to the config file to load.
@@ -64,6 +64,7 @@ def bootstrap(config_path: Path) -> None:
         client.ping(max_retries=max_retries, retry_delay=retry_delay)
         print("Hello Valkey!")
     except ConnectionError as e:
+        # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
         print(f"FAILED: {e}")
         sys.exit(1)
 

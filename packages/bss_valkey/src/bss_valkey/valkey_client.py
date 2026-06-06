@@ -94,6 +94,7 @@ class ValkeyClient:
                     return
             except valkey.exceptions.ConnectionError:
                 pass
+            # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
             print(f"Attempt {attempt}/{max_retries} failed. Retrying in {retry_delay}s ...")
             time.sleep(retry_delay)
         raise ConnectionError(f"Could not connect to Valkey after {max_retries} attempts.")
