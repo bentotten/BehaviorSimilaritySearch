@@ -60,11 +60,6 @@ def test_main_dispatches_bootstrap(mocker: MockerFixture) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_parser_no_subcommand_sets_command_none() -> None:
-    """No subcommand sets command to None."""
-    assert build_parser().parse_args([]).command is None
-
-
 def test_parser_default_config_path() -> None:
     """--config_path defaults to DEFAULT_CONFIG_PATH."""
     assert build_parser().parse_args(["bootstrap"]).config_path == DEFAULT_CONFIG_PATH
@@ -72,9 +67,14 @@ def test_parser_default_config_path() -> None:
 
 def test_parser_accepts_custom_config_path() -> None:
     """--config_path accepts an explicit path."""
-    custom = Path("configs/custom.env")
-    args = build_parser().parse_args(["--config_path", str(custom), "bootstrap"])
-    assert args.config_path == custom
+    custom_path = Path("configs/custom_path.env")
+    args = build_parser().parse_args(["--config_path", str(custom_path), "bootstrap"])
+    assert args.config_path == custom_path
+
+
+def test_parser_no_subcommand_sets_command_none() -> None:
+    """No subcommand sets command to None."""
+    assert build_parser().parse_args([]).command is None
 
 
 def test_parser_bootstrap_is_valid_subcommand() -> None:
