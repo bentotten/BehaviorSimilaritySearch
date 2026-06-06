@@ -53,7 +53,7 @@ def bootstrap(config_path: Path) -> None:
     host: str = config.get("VALKEY_HOST", DEFAULT_VALKEY_HOST)
     port: int = int(config.get("VALKEY_PORT", DEFAULT_VALKEY_PORT))
     max_retries: int = int(config.get("VALKEY_PING_MAX_RETRIES", DEFAULT_MAX_PING_RETRIES))
-    retry_delay: float = float(config.get("VALKEY_PING_RETRY_DELAY", DEFAULT_PING_RETRY_DELAY))
+    retry_delay: int = int(config.get("VALKEY_PING_RETRY_DELAY", DEFAULT_PING_RETRY_DELAY))
 
     # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
     print(f"Pinging Valkey at {host}:{port} ...", end=" ", flush=True)

@@ -6,6 +6,6 @@ services:
       - "${VALKEY_HOST:-127.0.0.1}:${VALKEY_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
-      interval: 5s
+      interval: ${VALKEY_PING_RETRY_DELAY:-2}s
       timeout: 3s
-      retries: 5
+      retries: ${VALKEY_PING_MAX_RETRIES:-5}

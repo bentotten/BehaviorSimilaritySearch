@@ -97,4 +97,4 @@ def test_get_client_without_args_uses_defaults(mocker: MockerFixture) -> None:
 def test_default_constants() -> None:
     """Default retry constants match documented values."""
     assert DEFAULT_MAX_PING_RETRIES == 5
-    assert DEFAULT_PING_RETRY_DELAY == 2.0
+    assert DEFAULT_PING_RETRY_DELAY == 2

@@ -10,7 +10,7 @@ import valkey
 #: Default maximum number of ping attempts before raising a connection error.
 DEFAULT_MAX_PING_RETRIES: int = 5
 #: Default seconds to wait between ping attempts.
-DEFAULT_PING_RETRY_DELAY: float = 2.0
+DEFAULT_PING_RETRY_DELAY: int = 2
 
 valkey_client: ValkeyClient | None = None
 
@@ -72,7 +72,7 @@ class ValkeyClient:
     def ping(
         self,
         max_retries: int = DEFAULT_MAX_PING_RETRIES,
-        retry_delay: float = DEFAULT_PING_RETRY_DELAY,
+        retry_delay: int = DEFAULT_PING_RETRY_DELAY,
     ) -> None:
         """Ping the Valkey server, retrying on failure.
 
