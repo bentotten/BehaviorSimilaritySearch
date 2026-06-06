@@ -12,6 +12,7 @@ DEFAULT_MAX_PING_RETRIES: int = 5
 #: Default seconds to wait between ping attempts.
 DEFAULT_PING_RETRY_DELAY: int = 2
 
+#: Global Valkey client singleton
 valkey_client: ValkeyClient | None = None
 
 
@@ -25,14 +26,14 @@ class ValkeyKwargs(TypedDict, total=False):
 
 
 def get_client(host: str | None = None, port: int | None = None) -> ValkeyClient:
-    """Return the singleton Valkey client, initialising it if necessary.
+    """Return the global Valkey client, initialising on first call.
 
     Args:
         host: Optional hostname used when initializing the client.
         port: Optional port used when initializing the client.
 
     Returns:
-        ValkeyClient: The singleton client instance.
+        ValkeyClient: The global Valkey client instance.
 
     """
     global valkey_client
@@ -50,7 +51,7 @@ class ValkeyClient:
     _client: valkey.Valkey
 
     def __init__(self, host: str | None = None, port: int | None = None) -> None:
-        """Initialise the underlying Valkey connection.
+        """Initialise the Valkey client.
 
         Falls back to the valkey library defaults if host or port are not provided.
 
@@ -76,7 +77,9 @@ class ValkeyClient:
         max_retries: int = DEFAULT_MAX_PING_RETRIES,
         retry_delay: int = DEFAULT_PING_RETRY_DELAY,
     ) -> None:
-        """Ping the Valkey server, retrying on failure.
+        """Ping the Valkey server.
+
+        Retries on failure.
 
         Args:
             max_retries: Maximum number of attempts before raising.
