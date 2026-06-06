@@ -23,9 +23,9 @@ class FakeValkey:
 
 
 class FailingFakeValkey(FakeValkey):
-    """FakeValkey variant that always raises ConnectionError on ping.
+    """FakeValkey variant that always has problems.
 
-    Use this to simulate a Valkey instance that is unreachable.
+    Simulates a Valkey instance that is unreachable or misbehaving.
     """
 
     def ping(self) -> bool:
