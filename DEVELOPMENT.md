@@ -17,16 +17,21 @@ This project is a multi-package monorepo managed with [uv workspaces](https://do
 Each package under `packages/` and `apps/` has its own `pyproject.toml` and can be installed and run independently on separate devices or instances.
 
 ```
-├── packages/          # Installable library packages
-│   └── ...
 ├── apps/              # Runnable applications
+│   └── ...
+├── configs/           # Loadable configuration files
+│   └── ...
+├── data/              # All data files (e.g. frames)
+│   └── ...
+├── docs/              # Autodoc configuration
+│   └── ...
+├── packages/          # Installable library packages
 │   └── ...
 ├── tests/
 │   ├── unit/          # Per-package unit tests
 │   └── integration/   # Cross-package integration tests
-├── docs/              # Sphinx documentation
-├── environment.yaml   # Micromamba environment (Python + system deps)
-└── pyproject.toml     # Workspace root (uv config, dev tools, lint/mypy)
+├── environment.yaml   # Micromamba environment (System dependencies and python version)
+└── pyproject.toml     # Python project configurations and Python dependencies
 ```
 
 ## Environment Setup and Build
@@ -50,18 +55,27 @@ To deactivate:
 micromamba deactivate
 ```
 
-## Running Checks
+## Running Project
 
 | Command                | Description                                      |
 |------------------------|--------------------------------------------------|
 | `make build`           | Install all workspace packages and dev dependencies |
-| `make lint`            | Check for code quality issues with ruff          |
+| `make up`              | Launch docker-compose and any other infrastructure |
+| `make down`            | Tear down docker containers and and other infrastructure |
+
+
+## Running Checks and Building Docs
+
+| Command                | Description                                      |
+|------------------------|--------------------------------------------------|
+| `make ci`              | Run all checks in sequence (mirrors CI)          |
 | `make check-codestyle` | Check formatting without making changes          |
-| `make type-check`      | Run static type checking with mypy               |
-| `make test`            | Run the test suite with pytest                   |
 | `make docs`            | Build HTML documentation                         |
 | `make format`          | Auto-fix lint and formatting issues (local only) |
-| `make ci`              | Run all checks in sequence (mirrors CI)          |
+| `make lint`            | Check for code quality issues with ruff          |
+| `make test`            | Run the test suite with pytest                   |
+| `make type-check`      | Run static type checking with mypy               |
+
 
 ## Cleaning
 
@@ -69,11 +83,11 @@ micromamba deactivate
 |--------------------|------------------------------------------------|
 | `make clean`       | Remove all build, pyc, and test artifacts      |
 | `make clean-build` | Remove build artifacts                         |
+| `make clean-docs`  | Remove generated documentation                 |
 | `make clean-pyc`   | Remove compiled Python files and `__pycache__` |
 | `make clean-test`  | Remove test and coverage artifacts             |
-| `make clean-docs`  | Remove generated documentation                 |
 
-## Running CI Locally
+## Running CI Release Workflow Locally
 
 [`act`](https://github.com/nektos/act) runs GitHub Actions workflows locally using Docker. It is installed as part of the micromamba environment.
 
@@ -113,16 +127,3 @@ To remove generated docs:
 ```bash
 make clean-docs
 ```
-
-
-## Windows Note
-
-**Note:** This project uses `make` and bash tooling which are not natively available on Windows. The recommended approach is to use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for Linux), which provides a full Linux environment.
-
-Install WSL2 with Ubuntu from PowerShell:
-
-```powershell
-wsl --install
-```
-
-Then follow the rest of the setup instructions inside the WSL2 terminal.

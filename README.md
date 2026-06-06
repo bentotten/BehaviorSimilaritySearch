@@ -116,10 +116,12 @@ micromamba deactivate
 
 Each sub-package has its own `pyproject.toml` and can be installed on its own, without pulling in the entire repository. This allows different parts of the project to run on different devices or instances with only the dependencies they need.
 
+Examples: 
+
 ```bash
+# Commandline interface
+uv pip install -e "apps/bss_cli"
+
 # Core library only (e.g. on an edge device)
 uv pip install -e "packages/bss_core"
-
-# CLI app (automatically installs bss_core as a dependency)
-uv pip install -e "apps/bss_cli"
 ```
