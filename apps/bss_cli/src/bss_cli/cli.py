@@ -37,14 +37,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser(
         "bootstrap",
-        help="Bootstrap infrastructure and verify connections.",
+        help="Bootstrap search backend and verify connections.",
     )
 
     return parser
 
 
 def bootstrap(config_path: Path) -> None:
-    """Bootstrap infrastructure (e.g. Valkey).
+    """Bootstrap search backend (e.g. Valkey).
 
     Args:
         config_path: Path to the config file to load.
