@@ -6,7 +6,7 @@ from dotenv import dotenv_values
 
 
 def load_config(config: Path) -> dict[str, str]:
-    """Load configuration from a file and return it as a dictionary.
+    """Load configurations from file.
 
     Args:
         config: Path to the configuration file.
@@ -15,6 +15,7 @@ def load_config(config: Path) -> dict[str, str]:
         dict[str, str]: Key/value pairs parsed from the config file.
 
     Raises:
+        FileNotFoundError: If the file does not exist.
         ValueError: If the file extension is not supported.
     """
     if not config.exists():
