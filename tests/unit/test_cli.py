@@ -8,6 +8,8 @@ from pytest_mock import MockerFixture
 from bss_cli import __version__
 from bss_cli.cli import (
     DEFAULT_CONFIG_PATH,
+    DEFAULT_MAX_PING_RETRIES,
+    DEFAULT_PING_RETRY_DELAY,
     DEFAULT_VALKEY_HOST,
     DEFAULT_VALKEY_PORT,
     bootstrap,
@@ -87,17 +89,32 @@ def test_parser_bootstrap_is_valid_subcommand() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_bootstrap_succeeds_when_ping_succeeds(mocker: MockerFixture) -> None:
-    """Test bootstrap completes without raising when ping succeeds."""
-    mocker.patch(
+def test_bootstrap_calls_subfunctions_with_correct_values(mocker: MockerFixture) -> None:
+    """bootstrap reads config and calls subfunctions with correct values."""
+    host = DEFAULT_VALKEY_HOST
+    port = DEFAULT_VALKEY_PORT
+    max_retries = DEFAULT_MAX_PING_RETRIES
+    retry_delay = DEFAULT_PING_RETRY_DELAY
+
+    mock_load = mocker.patch(
         "bss_cli.cli.load_config",
-        return_value={"VALKEY_HOST": DEFAULT_VALKEY_HOST, "VALKEY_PORT": DEFAULT_VALKEY_PORT},
+        return_value={
+            "VALKEY_HOST": host,
+            "VALKEY_PORT": port,
+            "VALKEY_PING_MAX_RETRIES": max_retries,
+            "VALKEY_PING_RETRY_DELAY": retry_delay,
+        },
     )
     mock_client = mocker.MagicMock()
-    mock_client.ping.return_value = None
-    mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
+    mock_get = mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
 
-    bootstrap(DEFAULT_CONFIG_PATH)  # should not raise
+    bootstrap(DEFAULT_CONFIG_PATH)
+
+    mock_load.assert_called_once_with(DEFAULT_CONFIG_PATH)
+    mock_get.assert_called_once_with(host=host, port=int(port))
+    mock_client.ping.assert_called_once_with(
+        max_retries=int(max_retries), retry_delay=int(retry_delay)
+    )
 
 
 def test_bootstrap_uses_defaults_when_config_keys_absent(mocker: MockerFixture) -> None:
@@ -112,8 +129,21 @@ def test_bootstrap_uses_defaults_when_config_keys_absent(mocker: MockerFixture) 
     mock_get.assert_called_once_with(host=DEFAULT_VALKEY_HOST, port=int(DEFAULT_VALKEY_PORT))
 
 
-def test_bootstrap_exits_on_connection_failure(mocker: MockerFixture) -> None:
-    """bootstrap calls sys.exit(1) when ping raises ConnectionError."""
+def test_bootstrap_succeeds_when_ping_succeeds(mocker: MockerFixture) -> None:
+    """Test bootstrap completes without raising when ping succeeds."""
+    mocker.patch(
+        "bss_cli.cli.load_config",
+        return_value={"VALKEY_HOST": DEFAULT_VALKEY_HOST, "VALKEY_PORT": DEFAULT_VALKEY_PORT},
+    )
+    mock_client = mocker.MagicMock()
+    mock_client.ping.return_value = None
+    mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
+
+    bootstrap(DEFAULT_CONFIG_PATH)  # should not raise
+
+
+def test_bootstrap_raises_on_connection_failure(mocker: MockerFixture) -> None:
+    """bootstrap raises ConnectionError when ping fails."""
     mocker.patch(
         "bss_cli.cli.load_config",
         return_value={"VALKEY_HOST": DEFAULT_VALKEY_HOST, "VALKEY_PORT": DEFAULT_VALKEY_PORT},
@@ -122,6 +152,5 @@ def test_bootstrap_exits_on_connection_failure(mocker: MockerFixture) -> None:
     mock_client.ping.side_effect = ConnectionError("unreachable")
     mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
 
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(ConnectionError, match="unreachable"):
         bootstrap(DEFAULT_CONFIG_PATH)
-    assert exc_info.value.code == 1

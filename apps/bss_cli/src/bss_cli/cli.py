@@ -1,7 +1,6 @@
 """Command-line interface for BehaviorSimilaritySearch."""
 
 import argparse
-import sys
 from pathlib import Path
 
 from bss_core.config import load_config
@@ -59,13 +58,8 @@ def bootstrap(config_path: Path) -> None:
     print(f"Pinging Valkey at {host}:{port} ...", end=" ", flush=True)
 
     client = get_client(host=host, port=port)
-
-    try:
-        client.ping(max_retries=max_retries, retry_delay=retry_delay)
-        print("Hello Valkey!")
-    except ConnectionError as e:
-        print(f"FAILED: {e}")
-        sys.exit(1)
+    client.ping(max_retries=max_retries, retry_delay=retry_delay)
+    print("Hello Valkey!")
 
 
 def main() -> None:
