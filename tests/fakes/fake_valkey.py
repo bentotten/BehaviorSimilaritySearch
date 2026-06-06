@@ -10,11 +10,8 @@ class FakeValkey:
     without requiring a running Valkey instance.
     """
 
-    # Fake Valkey storage
-    storage: dict[str, str]
-
     def __init__(self) -> None:
-        self.storage = {}
+        pass
 
     def ping(self) -> bool:
         """Simulate a successful PING response.
