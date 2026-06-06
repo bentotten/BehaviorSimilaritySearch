@@ -16,6 +16,8 @@ valkey_client: ValkeyClient | None = None
 
 
 class ValkeyKwargs(TypedDict, total=False):
+    """Optional keyword arguments for constructing a Valkey connection."""
+
     #: Valkey host/ip
     host: str
     #: Valkey port
@@ -62,7 +64,7 @@ class ValkeyClient:
         if port is not None:
             kwargs["port"] = port
 
-        self._client = valkey.Valkey(**kwargs, decode_responses=True)
+        self._client = valkey.Valkey(**kwargs)
 
     @property
     def client(self) -> valkey.Valkey:
