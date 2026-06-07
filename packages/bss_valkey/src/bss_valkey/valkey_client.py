@@ -11,6 +11,10 @@ import valkey
 DEFAULT_MAX_PING_RETRIES: int = 5
 #: Default seconds to wait between ping attempts.
 DEFAULT_PING_RETRY_DELAY: int = 2
+#: Default Valkey host
+DEFAULT_VALKEY_HOST: str = "127.0.0.1"
+#: Default Valkey port
+DEFAULT_VALKEY_PORT: int = 6379
 
 #: Global Valkey client singleton
 valkey_client: ValkeyClient | None = None
@@ -40,6 +44,12 @@ def get_client(host: str | None = None, port: int | None = None) -> ValkeyClient
 
     if valkey_client is None:
         valkey_client = ValkeyClient(host=host, port=port)
+    elif valkey_client.host != host or valkey_client.port != port:
+        # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
+        print(
+            f"Warning! Valkey client already initialized with host: {valkey_client.host}"
+            f"port: {valkey_client.port}"
+        )
 
     return valkey_client
 
@@ -49,6 +59,10 @@ class ValkeyClient:
 
     #: Valkey client handle
     _client: valkey.Valkey
+    #: Valkey host
+    _host: str
+    #: Valkey port
+    _port: int
 
     def __init__(self, host: str | None = None, port: int | None = None) -> None:
         """Initialise the Valkey client.
@@ -66,11 +80,23 @@ class ValkeyClient:
             kwargs["port"] = port
 
         self._client = valkey.Valkey(**kwargs)
+        self._host = self._client.get_connection_kwargs()["host"]
+        self._port = self._client.get_connection_kwargs()["port"]
 
     @property
     def client(self) -> valkey.Valkey:
         """Return the underlying Valkey client."""
         return self._client
+
+    @property
+    def host(self) -> str:
+        """Return the underlying Valkey host."""
+        return self._host
+
+    @property
+    def port(self) -> int:
+        """Return the underlying Valkey port."""
+        return self._port
 
     def ping(
         self,

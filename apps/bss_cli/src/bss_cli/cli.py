@@ -4,14 +4,18 @@ import argparse
 from pathlib import Path
 
 from bss_core.config import load_config
-from bss_valkey.valkey_client import DEFAULT_MAX_PING_RETRIES, DEFAULT_PING_RETRY_DELAY, get_client
+
+# NOTE: If changing base module, also change in __init__.py
+from bss_valkey import (
+    DEFAULT_MAX_PING_RETRIES,
+    DEFAULT_PING_RETRY_DELAY,
+    DEFAULT_VALKEY_HOST,
+    DEFAULT_VALKEY_PORT,
+)
+from bss_valkey.valkey_client import get_client
 
 #: Default file for configurations
 DEFAULT_CONFIG_PATH = Path("configs/local.env")
-#: Default Valkey ip/host
-DEFAULT_VALKEY_HOST = "127.0.0.1"
-#: Default Valkey port
-DEFAULT_VALKEY_PORT = "6379"
 
 
 def build_parser() -> argparse.ArgumentParser:

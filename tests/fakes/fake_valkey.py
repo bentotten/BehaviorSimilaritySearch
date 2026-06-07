@@ -2,6 +2,11 @@
 
 import valkey as valkey
 
+from bss_valkey.valkey_client import (
+    DEFAULT_VALKEY_HOST,
+    DEFAULT_VALKEY_PORT,
+)
+
 
 class FakeValkey:
     """Fake Valkey engine.
@@ -20,6 +25,14 @@ class FakeValkey:
             bool: Always True.
         """
         return True
+
+    def get_connection_kwargs(self) -> dict[str, str | int]:
+        """Return simulated connection kwargs.
+
+        Returns:
+            dict: Host and port as the valkey library would return them.
+        """
+        return {"host": DEFAULT_VALKEY_HOST, "port": DEFAULT_VALKEY_PORT}
 
 
 class FailingFakeValkey(FakeValkey):

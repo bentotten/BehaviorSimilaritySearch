@@ -5,17 +5,15 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
-from bss_cli import __version__
-from bss_cli.cli import (
+from bss_cli import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_MAX_PING_RETRIES,
     DEFAULT_PING_RETRY_DELAY,
     DEFAULT_VALKEY_HOST,
     DEFAULT_VALKEY_PORT,
-    bootstrap,
-    build_parser,
-    main,
+    __version__,
 )
+from bss_cli.cli import bootstrap, build_parser, main
 
 # ---------------------------------------------------------------------------
 # Smoke tests
