@@ -31,7 +31,7 @@ exclude = ["*"]
 
 [tool.ruff]
 line-length = 100
-src = ["packages/bss_core/src", "packages/bss_valkey/src", "apps/bss_cli/src"]
+src = ["packages/bss_core/src", "packages/bss_data/src", "packages/bss_valkey/src", "apps/bss_cli/src"]
 
 [tool.ruff.lint]
 select = [
@@ -53,6 +53,7 @@ python_version = "3.12"
 strict = true
 files = [
     "packages/bss_core/src",
+    "packages/bss_data/src",
     "packages/bss_valkey/src",
     "apps/bss_cli/src",
     "tests",
@@ -60,4 +61,4 @@ files = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=packages/bss_core/src --cov=packages/bss_valkey/src --cov=apps/bss_cli/src --cov-report=term-missing"
+addopts = "--cov=packages/bss_core/src --cov=packages/bss_data/src --cov=packages/bss_valkey/src --cov=apps/bss_cli/src --cov-report=term-missing"

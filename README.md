@@ -9,6 +9,7 @@ A computer vision project to detect if specific behaviours are present in video 
     - [Docker](#docker)
 - [Installation](#installation)
 - [Deploying Packages Independently](#deploying-packages-independently)
+- [Bootsrap Data Loading](#data-loading)
 
 ## Prerequisites
 
@@ -124,4 +125,45 @@ uv pip install -e "apps/bss_cli"
 
 # Core library only (e.g. on an edge device)
 uv pip install -e "packages/bss_core"
+```
+
+## Data Loading
+
+The `bss_data` package provides dataset loading and batching utilities for both images and video clips.
+
+### Datasets
+
+| Class | Description |
+|-------|-------------|
+| *`ImageDirectoryDataset` | Load images from a directory tree. Labels are derived from subdirectory names. |
+| *`VideoDirectoryDataset` | Load video clips stored as directories of frame images. |
+| `OxfordPetsDataset` | Oxford-IIIT Pet Dataset (37 breeds, ~200 images each).|
+
+### Directory Layouts
+
+When loading samples to be bootsrap, follow the following layout:
+
+**Image datasets** (flat or labeled subdirectories):
+
+```
+data/my_images/
+    cats/
+        cat_001.jpg
+        cat_002.jpg
+    dogs/
+        dog_001.jpg
+```
+
+**Video clip datasets** (label → clip → frames):
+
+```
+data/my_videos/
+    running/
+        clip_001/
+            frame_0001.jpg
+            frame_0002.jpg
+        clip_002/
+            ...
+    jumping/
+        ...
 ```
