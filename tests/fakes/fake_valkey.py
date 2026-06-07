@@ -15,8 +15,14 @@ class FakeValkey:
     without requiring a running Valkey instance.
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self,
+        host: str = DEFAULT_VALKEY_HOST,
+        port: int = DEFAULT_VALKEY_PORT,
+        **kwargs: object,
+    ) -> None:
+        self._host = host
+        self._port = port
 
     def ping(self) -> bool:
         """Simulate a successful PING response.
@@ -30,9 +36,9 @@ class FakeValkey:
         """Return simulated connection kwargs.
 
         Returns:
-            dict: Host and port as the valkey library would return them.
+            dict: Host and port reflecting the values passed at construction.
         """
-        return {"host": DEFAULT_VALKEY_HOST, "port": DEFAULT_VALKEY_PORT}
+        return {"host": self._host, "port": self._port}
 
 
 class FailingFakeValkey(FakeValkey):
