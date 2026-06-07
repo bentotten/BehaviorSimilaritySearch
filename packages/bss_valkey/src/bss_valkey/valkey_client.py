@@ -47,7 +47,7 @@ def get_client(host: str | None = None, port: int | None = None) -> ValkeyClient
     elif valkey_client.host != host or valkey_client.port != port:
         # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
         print(
-            f"Warning! Valkey client already initialized with host: {valkey_client.host}"
+            f"Warning! Valkey client already initialized with host: {valkey_client.host}, "
             f"port: {valkey_client.port}"
         )
 
