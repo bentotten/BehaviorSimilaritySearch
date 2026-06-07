@@ -6,6 +6,7 @@ A computer vision project to detect if specific behaviours are present in video 
 - [Prerequisites](#prerequisites)
     - [Note for Windows users](#note-for-windows-users)
     - [micromamba](#micromamba)
+    - [Docker](#docker)
 - [Installation](#installation)
 - [Deploying Packages Independently](#deploying-packages-independently)
 
@@ -52,6 +53,26 @@ Once installed, micromamba can be updated at any time with:
 micromamba self-update
 ```
 
+### Docker
+
+This project uses Docker and the Compose v2 plugin to run local infrastructure.
+
+**Linux:**
+
+```bash
+sudo apt install docker.io docker-compose-v2
+```
+
+**macOS (Homebrew):**
+
+```bash
+brew install --cask docker
+```
+
+**Windows:**
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/), which includes Compose v2.
+
 ## Installation
 
 Create and activate the environment:
@@ -67,10 +88,22 @@ Then install the project:
 make build
 ```
 
+Spin up infrastructure:
+
+```bash
+make up
+```
+
 To run:
 
 ```bash
 bss
+```
+
+To clean up local infrastructure:
+
+```bash
+make down
 ```
 
 To deactivate:
@@ -83,10 +116,12 @@ micromamba deactivate
 
 Each sub-package has its own `pyproject.toml` and can be installed on its own, without pulling in the entire repository. This allows different parts of the project to run on different devices or instances with only the dependencies they need.
 
-```bash
-# Core library only (e.g. on an edge device)
-uv pip install -e "packages/behavior_core"
+Examples: 
 
-# CLI app (automatically installs behavior_core as a dependency)
-uv pip install -e "apps/behavior_cli"
+```bash
+# Commandline interface
+uv pip install -e "apps/bss_cli"
+
+# Core library only (e.g. on an edge device)
+uv pip install -e "packages/bss_core"
 ```

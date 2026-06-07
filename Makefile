@@ -1,6 +1,9 @@
 SHELL=/bin/bash
 LINT_PATHS = packages/ apps/ tests/
 
+# For docker-compose
+COMPOSE_ENV ?= configs/local.env
+
 # ---------------------------------------------------------------
 # Cleaning
 # ---------------------------------------------------------------
@@ -51,6 +54,18 @@ test:
 	pytest tests/
 
 # ---------------------------------------------------------------
+# Infrastructure
+# ---------------------------------------------------------------
+
+.PHONY: down
+
+up:
+	docker compose --env-file $(COMPOSE_ENV) up -d
+
+down:
+	docker compose down
+
+# ---------------------------------------------------------------
 # Local convenience
 # ---------------------------------------------------------------
 
@@ -65,8 +80,9 @@ ci: lint check-codestyle type-check test
 
 # Install all workspace packages and dev dependencies
 build:
-	uv pip install -e "packages/behavior_core"
-	uv pip install -e "apps/behavior_cli"
+	uv pip install -e "packages/bss_core"
+	uv pip install -e "packages/bss_valkey"
+	uv pip install -e "apps/bss_cli"
 	uv pip install -e ".[dev]"
 	@echo "Build complete. Run with 'bss'"
 

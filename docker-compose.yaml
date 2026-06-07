@@ -1,0 +1,11 @@
+services:
+  valkey:
+    # Note: Loads modules automatically - no need to reload, or else will crash engine
+    image: valkey/valkey-bundle:8.1.6
+    ports:
+      - "${VALKEY_HOST:-127.0.0.1}:${VALKEY_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: ${VALKEY_PING_RETRY_DELAY:-2}s
+      timeout: 3s
+      retries: ${VALKEY_PING_MAX_RETRIES:-5}

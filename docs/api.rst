@@ -1,28 +1,28 @@
 API Reference
 =============
 
-behavior_core
+bss_core
 -------------
 
-.. automodule:: behavior_core
+.. automodule:: bss_core
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: behavior_core.main
+.. automodule:: bss_core.main
    :members:
    :undoc-members:
    :show-inheritance:
 
-behavior_cli
+bss_cli
 ------------
 
-.. automodule:: behavior_cli
+.. automodule:: bss_cli
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: behavior_cli.cli
+.. automodule:: bss_cli.cli
    :members:
    :undoc-members:
    :show-inheritance:
