@@ -3,6 +3,10 @@
 import argparse
 from pathlib import Path
 
+# TODO: BEN - use explicit exports instead
+from bss_data.dataloader import load_data
+from bss_encoder.encoder import encode_data
+
 from bss_core.config import load_config
 
 # NOTE: If changing base module, also change in __init__.py
@@ -13,6 +17,7 @@ from bss_valkey import (
     DEFAULT_VALKEY_PORT,
 )
 from bss_valkey.valkey_client import get_client
+from bss_valkey.vector_similarity_search import create_profile, store_vectors
 
 #: Default file for configurations
 DEFAULT_CONFIG_PATH = Path("configs/local.env")
@@ -63,6 +68,19 @@ def bootstrap(config_path: Path) -> None:
 
     client = get_client(host=host, port=port)
     client.ping(max_retries=max_retries, retry_delay=retry_delay)
+
+    # Load data into memory
+    load_data()
+
+    # Create Valkey index (we will call it 'profile')
+    create_profile()
+
+    # Encode data
+    encode_data()
+
+    # Upload to Valkey
+    store_vectors()
+
     print("Hello Valkey!")
 
 

@@ -9,6 +9,8 @@ description = "CLI application for BehaviorSimilaritySearch."
 requires-python = ">=3.12"
 dependencies = [
     "behavior-similarity-search-core",
+    "behavior-similarity-search-data",
+    "behavior-similarity-search-encoder",
     "behavior-similarity-search-valkey",
 ]
 

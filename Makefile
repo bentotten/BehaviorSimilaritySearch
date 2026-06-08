@@ -82,6 +82,8 @@ ci: lint check-codestyle type-check test
 build:
 	uv pip install -e "packages/bss_core"
 	uv pip install -e "packages/bss_valkey"
+	uv pip install -e "packages/bss_data"
+	uv pip install -e "packages/bss_encoder"
 	uv pip install -e "apps/bss_cli"
 	uv pip install -e ".[dev]"
 	@echo "Build complete. Run with 'bss'"
