@@ -15,7 +15,6 @@ from bss_cli import (
     __version__,
 )
 from bss_cli.cli import bootstrap, build_parser, create_profiles, main, start_search_backend
-from bss_valkey.vector_similarity_search import IndexConfig, VectorFieldConfig
 
 # ---------------------------------------------------------------------------
 # Smoke tests
@@ -43,7 +42,7 @@ def test_main_no_args_prints_help(
     # and exits with an unrecognised argument error.
     mocker.patch("sys.argv", ["bss"])
     main()
-    # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
+    # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)s
     assert capsys.readouterr().out == build_parser().format_help()
 
 
@@ -62,7 +61,8 @@ def test_main_dispatches_bootstrap_with_custom_paths(mocker: MockerFixture) -> N
     env_path = "configs/prod.env"
     profile_path = "configs/prod_profiles.yaml"
     mocker.patch(
-        "sys.argv", ["bss", "--env_config", env_path, "--profile_config", profile_path, "bootstrap"]
+        "sys.argv",
+        ["bss", "--env_config", env_path, "--profile_config", profile_path, "bootstrap"],
     )
     mock_bootstrap = mocker.patch("bss_cli.cli.bootstrap")
 
@@ -112,7 +112,9 @@ def test_parser_bootstrap_is_valid_subcommand() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_start_search_backend_creates_backend_with_correct_values(mocker: MockerFixture) -> None:
+def test_start_search_backend_creates_backend_with_correct_values(
+    mocker: MockerFixture,
+) -> None:
     """start_search_backend reads config and calls subfunctions with correct values."""
     host = DEFAULT_VALKEY_HOST
     port = DEFAULT_VALKEY_PORT
@@ -140,7 +142,9 @@ def test_start_search_backend_creates_backend_with_correct_values(mocker: Mocker
     )
 
 
-def test_start_search_backend_creates_backend_with_custom_values(mocker: MockerFixture) -> None:
+def test_start_search_backend_creates_backend_with_custom_values(
+    mocker: MockerFixture,
+) -> None:
     """start_search_backend reads config and calls subfunctions with correct values."""
     env_path = Path("foobar")
     host = "foo"
@@ -169,8 +173,10 @@ def test_start_search_backend_creates_backend_with_custom_values(mocker: MockerF
     )
 
 
-def test_start_search_backend_uses_defaults_when_config_keys_absent(mocker: MockerFixture) -> None:
-    """bootstrap falls back to defaults when config dict has no Valkey keys."""
+def test_start_search_backend_uses_defaults_when_config_keys_absent(
+    mocker: MockerFixture,
+) -> None:
+    """start_search_backend falls back to defaults when config has no Valkey keys."""
     mocker.patch("bss_cli.cli.load_config", return_value={})
     mock_client = mocker.MagicMock()
     mock_client.ping.return_value = None
@@ -182,7 +188,7 @@ def test_start_search_backend_uses_defaults_when_config_keys_absent(mocker: Mock
 
 
 def test_start_search_backend_succeeds_when_ping_succeeds(mocker: MockerFixture) -> None:
-    """Test bootstrap completes without raising when ping succeeds."""
+    """start_search_backend completes without raising when ping succeeds."""
     mocker.patch(
         "bss_cli.cli.load_config",
         return_value={"VALKEY_HOST": DEFAULT_VALKEY_HOST, "VALKEY_PORT": DEFAULT_VALKEY_PORT},
@@ -195,7 +201,7 @@ def test_start_search_backend_succeeds_when_ping_succeeds(mocker: MockerFixture)
 
 
 def test_start_search_backend_raises_on_connection_failure(mocker: MockerFixture) -> None:
-    """bootstrap raises ConnectionError when ping fails."""
+    """start_search_backend raises ConnectionError when ping fails."""
     mocker.patch(
         "bss_cli.cli.load_config",
         return_value={"VALKEY_HOST": DEFAULT_VALKEY_HOST, "VALKEY_PORT": DEFAULT_VALKEY_PORT},
@@ -213,21 +219,17 @@ def test_start_search_backend_raises_on_connection_failure(mocker: MockerFixture
 # ---------------------------------------------------------------------------
 
 
-def test_create_profile_happy_path(mocker: MockerFixture) -> None:
-    """start_search_backend reads config and calls subfunctions with correct values."""
-    datastructure = "HASH"
-    prefixes = ["frame:"]
-    field_name = "embedding"
-    algorithm = "HNSW"
-    vector_type = "FLOAT32"
-    dimensions = 512
-    distance_metric = "COSINE"
+def test_create_profiles_calls_create_index_with_config_dict(
+    mocker: MockerFixture, fake_profile_config: dict[str, object]
+) -> None:
+    """create_profiles calls create_index with the expected config dict."""
 
     # TODO: BEN - once loading yaml, update this
     # mock_load = mocker.patch(
     #     "bss_cli.cli.load_config",
     #     return_value={},
     # )
+
     mock_client = mocker.MagicMock()
     mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
     mock_create_index = mocker.patch("bss_cli.cli.create_index")
@@ -237,12 +239,7 @@ def test_create_profile_happy_path(mocker: MockerFixture) -> None:
     # TODO: BEN - once loading yaml, update this
     # mock_load.assert_called_once_with(DEFAULT_PROFILE_CONFIG_PATH)
 
-    mock_create_index.assert_called_once_with(
-        mock_client,
-        "fake_index",
-        IndexConfig(datastructure, prefixes),
-        VectorFieldConfig(field_name, algorithm, vector_type, dimensions, distance_metric),
-    )
+    mock_create_index.assert_called_once_with(mock_client, fake_profile_config)
 
 
 # ---------------------------------------------------------------------------
@@ -251,8 +248,7 @@ def test_create_profile_happy_path(mocker: MockerFixture) -> None:
 
 
 def test_bootstrap_calls_subfunctions_with_correct_values(mocker: MockerFixture) -> None:
-    """bootstrap reads config and calls subfunctions with correct values."""
-
+    """bootstrap calls all subfunctions with correct arguments."""
     mock_start_search_backend_call = mocker.patch("bss_cli.cli.start_search_backend")
     mock_create_profiles = mocker.patch("bss_cli.cli.create_profiles")
     mock_load_data = mocker.patch("bss_cli.cli.load_data")

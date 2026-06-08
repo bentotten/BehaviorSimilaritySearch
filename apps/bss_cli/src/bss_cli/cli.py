@@ -2,6 +2,7 @@
 
 import argparse
 from pathlib import Path
+from typing import Any
 
 # TODO: BEN - use explicit exports instead
 from bss_data.dataloader import load_data
@@ -17,12 +18,7 @@ from bss_valkey import (
     DEFAULT_VALKEY_PORT,
 )
 from bss_valkey.valkey_client import get_client
-from bss_valkey.vector_similarity_search import (
-    IndexConfig,
-    VectorFieldConfig,
-    create_index,
-    store_vectors,
-)
+from bss_valkey.vector_similarity_search import create_index, store_vectors
 
 #: Default file for environment/connection configurations
 DEFAULT_ENV_CONFIG_PATH = Path("configs/local.env")
@@ -90,14 +86,23 @@ def create_profiles(profile_config_path: Path) -> None:
     # TODO: Update load function
     # profile_config: dict[str, str] = load_config(profile_config_path)
     _unused = profile_config_path
+    profile_config: dict[str, Any] = {
+        "index_name": "fake_index",
+        "index_config": {
+            "data_structure": "HASH",
+            "prefixes": ["frame:"],
+        },
+        "vector_field": {
+            "field_name": "embedding",
+            "algorithm": "HNSW",
+            "vector_type": "FLOAT32",
+            "dim": 512,
+            "distance_metric": "COSINE",
+        },
+    }
 
     # For Valkey, indices == profiles
-    create_index(
-        get_client(),
-        "fake_index",
-        IndexConfig("HASH", ["frame:"]),
-        VectorFieldConfig("embedding", "HNSW", "FLOAT32", 512, "COSINE"),
-    )
+    create_index(get_client(), profile_config)
 
 
 def bootstrap(env_config_path: Path, profile_config_path: Path) -> None:
