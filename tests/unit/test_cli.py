@@ -6,14 +6,16 @@ import pytest
 from pytest_mock import MockerFixture
 
 from bss_cli import (
-    DEFAULT_CONFIG_PATH,
+    DEFAULT_ENV_CONFIG_PATH,
     DEFAULT_MAX_PING_RETRIES,
     DEFAULT_PING_RETRY_DELAY,
+    DEFAULT_PROFILE_CONFIG_PATH,
     DEFAULT_VALKEY_HOST,
     DEFAULT_VALKEY_PORT,
     __version__,
 )
-from bss_cli.cli import bootstrap, build_parser, main
+from bss_cli.cli import bootstrap, build_parser, create_profiles, main, start_search_backend
+from bss_valkey.vector_similarity_search import IndexConfig, VectorFieldConfig
 
 # ---------------------------------------------------------------------------
 # Smoke tests
@@ -46,13 +48,27 @@ def test_main_no_args_prints_help(
 
 
 def test_main_dispatches_bootstrap(mocker: MockerFixture) -> None:
-    """main() calls bootstrap() with config_path when bootstrap subcommand is used."""
+    """main() calls bootstrap() with config paths when bootstrap subcommand is used."""
     mocker.patch("sys.argv", ["bss", "bootstrap"])
     mock_bootstrap = mocker.patch("bss_cli.cli.bootstrap")
 
     main()
 
-    mock_bootstrap.assert_called_once_with(DEFAULT_CONFIG_PATH)
+    mock_bootstrap.assert_called_once_with(DEFAULT_ENV_CONFIG_PATH, DEFAULT_PROFILE_CONFIG_PATH)
+
+
+def test_main_dispatches_bootstrap_with_custom_paths(mocker: MockerFixture) -> None:
+    """main() passes custom paths to bootstrap() when provided."""
+    env_path = "configs/prod.env"
+    profile_path = "configs/prod_profiles.yaml"
+    mocker.patch(
+        "sys.argv", ["bss", "--env_config", env_path, "--profile_config", profile_path, "bootstrap"]
+    )
+    mock_bootstrap = mocker.patch("bss_cli.cli.bootstrap")
+
+    main()
+
+    mock_bootstrap.assert_called_once_with(Path(env_path), Path(profile_path))
 
 
 # ---------------------------------------------------------------------------
@@ -60,16 +76,25 @@ def test_main_dispatches_bootstrap(mocker: MockerFixture) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_parser_default_config_path() -> None:
-    """--config_path defaults to DEFAULT_CONFIG_PATH."""
-    assert build_parser().parse_args(["bootstrap"]).config_path == DEFAULT_CONFIG_PATH
+def test_parser_default_configs() -> None:
+    """Config paths default to proper defaults."""
+    bootstrap_args = build_parser().parse_args(["bootstrap"])
+    assert bootstrap_args.env_config == DEFAULT_ENV_CONFIG_PATH
+    assert bootstrap_args.profile_config == DEFAULT_PROFILE_CONFIG_PATH
 
 
-def test_parser_accepts_custom_config_path() -> None:
-    """--config_path accepts an explicit path."""
-    custom_path = Path("configs/custom_path.env")
-    args = build_parser().parse_args(["--config_path", str(custom_path), "bootstrap"])
-    assert args.config_path == custom_path
+def test_parser_accepts_custom_env_config_path() -> None:
+    """--env_config accepts an explicit path."""
+    custom_env_path = Path("configs/custom_path.env")
+    args = build_parser().parse_args(["--env_config", str(custom_env_path), "bootstrap"])
+    assert args.env_config == custom_env_path
+
+
+def test_parser_accepts_custom_profile_config_path() -> None:
+    """--profile_config accepts an explicit path."""
+    custom_profile_path = Path("configs/custom_profiles.yaml")
+    args = build_parser().parse_args(["--profile_config", str(custom_profile_path), "bootstrap"])
+    assert args.profile_config == custom_profile_path
 
 
 def test_parser_no_subcommand_sets_command_none() -> None:
@@ -83,12 +108,12 @@ def test_parser_bootstrap_is_valid_subcommand() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Bootstrap
+# start_search_backend
 # ---------------------------------------------------------------------------
 
 
-def test_bootstrap_calls_subfunctions_with_correct_values(mocker: MockerFixture) -> None:
-    """bootstrap reads config and calls subfunctions with correct values."""
+def test_start_search_backend_creates_backend_with_correct_values(mocker: MockerFixture) -> None:
+    """start_search_backend reads config and calls subfunctions with correct values."""
     host = DEFAULT_VALKEY_HOST
     port = DEFAULT_VALKEY_PORT
     max_retries = DEFAULT_MAX_PING_RETRIES
@@ -104,30 +129,59 @@ def test_bootstrap_calls_subfunctions_with_correct_values(mocker: MockerFixture)
         },
     )
     mock_client = mocker.MagicMock()
-    mock_get = mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
+    mock_get_client = mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
 
-    bootstrap(DEFAULT_CONFIG_PATH)
+    start_search_backend(DEFAULT_ENV_CONFIG_PATH)
 
-    mock_load.assert_called_once_with(DEFAULT_CONFIG_PATH)
-    mock_get.assert_called_once_with(host=host, port=int(port))
+    mock_load.assert_called_once_with(DEFAULT_ENV_CONFIG_PATH)
+    mock_get_client.assert_called_once_with(host=host, port=int(port))
     mock_client.ping.assert_called_once_with(
         max_retries=int(max_retries), retry_delay=int(retry_delay)
     )
 
 
-def test_bootstrap_uses_defaults_when_config_keys_absent(mocker: MockerFixture) -> None:
+def test_start_search_backend_creates_backend_with_custom_values(mocker: MockerFixture) -> None:
+    """start_search_backend reads config and calls subfunctions with correct values."""
+    env_path = Path("foobar")
+    host = "foo"
+    port = "1234"
+    max_retries = "99"
+    retry_delay = "999"
+
+    mock_load = mocker.patch(
+        "bss_cli.cli.load_config",
+        return_value={
+            "VALKEY_HOST": host,
+            "VALKEY_PORT": port,
+            "VALKEY_PING_MAX_RETRIES": max_retries,
+            "VALKEY_PING_RETRY_DELAY": retry_delay,
+        },
+    )
+    mock_client = mocker.MagicMock()
+    mock_get_client = mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
+
+    start_search_backend(env_path)
+
+    mock_load.assert_called_once_with(env_path)
+    mock_get_client.assert_called_once_with(host=host, port=int(port))
+    mock_client.ping.assert_called_once_with(
+        max_retries=int(max_retries), retry_delay=int(retry_delay)
+    )
+
+
+def test_start_search_backend_uses_defaults_when_config_keys_absent(mocker: MockerFixture) -> None:
     """bootstrap falls back to defaults when config dict has no Valkey keys."""
     mocker.patch("bss_cli.cli.load_config", return_value={})
     mock_client = mocker.MagicMock()
     mock_client.ping.return_value = None
-    mock_get = mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
+    mock_get_client = mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
 
-    bootstrap(DEFAULT_CONFIG_PATH)
+    start_search_backend(DEFAULT_ENV_CONFIG_PATH)
 
-    mock_get.assert_called_once_with(host=DEFAULT_VALKEY_HOST, port=int(DEFAULT_VALKEY_PORT))
+    mock_get_client.assert_called_once_with(host=DEFAULT_VALKEY_HOST, port=int(DEFAULT_VALKEY_PORT))
 
 
-def test_bootstrap_succeeds_when_ping_succeeds(mocker: MockerFixture) -> None:
+def test_start_search_backend_succeeds_when_ping_succeeds(mocker: MockerFixture) -> None:
     """Test bootstrap completes without raising when ping succeeds."""
     mocker.patch(
         "bss_cli.cli.load_config",
@@ -137,10 +191,10 @@ def test_bootstrap_succeeds_when_ping_succeeds(mocker: MockerFixture) -> None:
     mock_client.ping.return_value = None
     mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
 
-    bootstrap(DEFAULT_CONFIG_PATH)  # should not raise
+    start_search_backend(DEFAULT_ENV_CONFIG_PATH)  # should not raise
 
 
-def test_bootstrap_raises_on_connection_failure(mocker: MockerFixture) -> None:
+def test_start_search_backend_raises_on_connection_failure(mocker: MockerFixture) -> None:
     """bootstrap raises ConnectionError when ping fails."""
     mocker.patch(
         "bss_cli.cli.load_config",
@@ -151,4 +205,66 @@ def test_bootstrap_raises_on_connection_failure(mocker: MockerFixture) -> None:
     mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
 
     with pytest.raises(ConnectionError, match="unreachable"):
-        bootstrap(DEFAULT_CONFIG_PATH)
+        start_search_backend(DEFAULT_ENV_CONFIG_PATH)
+
+
+# ---------------------------------------------------------------------------
+# create_profiles
+# ---------------------------------------------------------------------------
+
+
+def test_create_profile_happy_path(mocker: MockerFixture) -> None:
+    """start_search_backend reads config and calls subfunctions with correct values."""
+    datastructure = "HASH"
+    prefixes = ["frame:"]
+    field_name = "embedding"
+    algorithm = "HNSW"
+    vector_type = "FLOAT32"
+    dimensions = 512
+    distance_metric = "COSINE"
+
+    # TODO: BEN - once loading yaml, update this
+    # mock_load = mocker.patch(
+    #     "bss_cli.cli.load_config",
+    #     return_value={},
+    # )
+    mock_client = mocker.MagicMock()
+    mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
+    mock_create_index = mocker.patch("bss_cli.cli.create_index")
+
+    create_profiles(DEFAULT_PROFILE_CONFIG_PATH)
+
+    # TODO: BEN - once loading yaml, update this
+    # mock_load.assert_called_once_with(DEFAULT_PROFILE_CONFIG_PATH)
+
+    mock_create_index.assert_called_once_with(
+        mock_client,
+        "fake_index",
+        IndexConfig(datastructure, prefixes),
+        VectorFieldConfig(field_name, algorithm, vector_type, dimensions, distance_metric),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap
+# ---------------------------------------------------------------------------
+
+
+def test_bootstrap_calls_subfunctions_with_correct_values(mocker: MockerFixture) -> None:
+    """bootstrap reads config and calls subfunctions with correct values."""
+
+    mock_start_search_backend_call = mocker.patch("bss_cli.cli.start_search_backend")
+    mock_create_profiles = mocker.patch("bss_cli.cli.create_profiles")
+    mock_load_data = mocker.patch("bss_cli.cli.load_data")
+    mock_encode_data = mocker.patch("bss_cli.cli.encode_data")
+    mock_store_vectors = mocker.patch("bss_cli.cli.store_vectors")
+
+    bootstrap(DEFAULT_ENV_CONFIG_PATH, DEFAULT_PROFILE_CONFIG_PATH)
+
+    # Normally we dont want to test implementation details in this way, but here we want to ensure
+    # appropriate values are being passed through subcommand without becoming corrupted or switched.
+    mock_start_search_backend_call.assert_called_once_with(DEFAULT_ENV_CONFIG_PATH)
+    mock_create_profiles.assert_called_once_with(DEFAULT_PROFILE_CONFIG_PATH)
+    mock_load_data.assert_called_once_with()
+    mock_encode_data.assert_called_once_with()
+    mock_store_vectors.assert_called_once_with()

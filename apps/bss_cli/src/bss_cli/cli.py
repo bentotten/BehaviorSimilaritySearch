@@ -17,10 +17,17 @@ from bss_valkey import (
     DEFAULT_VALKEY_PORT,
 )
 from bss_valkey.valkey_client import get_client
-from bss_valkey.vector_similarity_search import create_profile, store_vectors
+from bss_valkey.vector_similarity_search import (
+    IndexConfig,
+    VectorFieldConfig,
+    create_index,
+    store_vectors,
+)
 
-#: Default file for configurations
-DEFAULT_CONFIG_PATH = Path("configs/local.env")
+#: Default file for environment/connection configurations
+DEFAULT_ENV_CONFIG_PATH = Path("configs/local.env")
+#: Default file for vector index profile configurations
+DEFAULT_PROFILE_CONFIG_PATH = Path("configs/profiles.yaml")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,11 +41,18 @@ def build_parser() -> argparse.ArgumentParser:
         description="Behavior Similarity Search.",
     )
     parser.add_argument(
-        "--config_path",
+        "--env_config",
         type=Path,
-        default=DEFAULT_CONFIG_PATH,
+        default=DEFAULT_ENV_CONFIG_PATH,
         metavar="PATH",
-        help=f"Path to configuration file (default: {DEFAULT_CONFIG_PATH}).",
+        help=f"Path to environment/connection config file (default: {DEFAULT_ENV_CONFIG_PATH}).",
+    )
+    parser.add_argument(
+        "--profile_config",
+        type=Path,
+        default=DEFAULT_PROFILE_CONFIG_PATH,
+        metavar="PATH",
+        help=f"Path to vector index profile config file (default: {DEFAULT_PROFILE_CONFIG_PATH}).",
     )
 
     subparsers = parser.add_subparsers(dest="command")
@@ -51,34 +65,59 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def bootstrap(config_path: Path) -> None:
-    """Bootstrap search backend (e.g. Valkey).
+def start_search_backend(env_config_path: Path) -> None:
+    """Start and initialize search backend (e.g. Valkey server)."""
+    search_backend_config: dict[str, str] = load_config(env_config_path)
 
-    Args:
-        config_path: Path to the config file to load.
-    """
-    config: dict[str, str] = load_config(config_path)
-    host: str = config.get("VALKEY_HOST", DEFAULT_VALKEY_HOST)
-    port: int = int(config.get("VALKEY_PORT", DEFAULT_VALKEY_PORT))
-    max_retries: int = int(config.get("VALKEY_PING_MAX_RETRIES", DEFAULT_MAX_PING_RETRIES))
-    retry_delay: int = int(config.get("VALKEY_PING_RETRY_DELAY", DEFAULT_PING_RETRY_DELAY))
+    host: str = search_backend_config.get("VALKEY_HOST", DEFAULT_VALKEY_HOST)
+    port: int = int(search_backend_config.get("VALKEY_PORT", DEFAULT_VALKEY_PORT))
+    max_retries: int = int(
+        search_backend_config.get("VALKEY_PING_MAX_RETRIES", DEFAULT_MAX_PING_RETRIES)
+    )
+    retry_delay: int = int(
+        search_backend_config.get("VALKEY_PING_RETRY_DELAY", DEFAULT_PING_RETRY_DELAY)
+    )
 
     # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
     print(f"Pinging Valkey at {host}:{port} ...", end=" ", flush=True)
-
     client = get_client(host=host, port=port)
     client.ping(max_retries=max_retries, retry_delay=retry_delay)
 
-    # Load data into memory
+
+def create_profiles(profile_config_path: Path) -> None:
+    """Create search profiles with the search backend"""
+
+    # TODO: Update load function
+    # profile_config: dict[str, str] = load_config(profile_config_path)
+    _unused = profile_config_path
+
+    # For Valkey, indices == profiles
+    create_index(
+        get_client(),
+        "fake_index",
+        IndexConfig("HASH", ["frame:"]),
+        VectorFieldConfig("embedding", "HNSW", "FLOAT32", 512, "COSINE"),
+    )
+
+
+def bootstrap(env_config_path: Path, profile_config_path: Path) -> None:
+    """Bootstrap search backend (e.g. Valkey).
+
+    Args:
+        env_config_path: Path to the config file to load.
+        profile_config_path: Path to the vector index profile config file.
+
+    """
+
+    start_search_backend(env_config_path)
+
+    create_profiles(profile_config_path)
+
     load_data()
 
-    # Create Valkey index (we will call it 'profile')
-    create_profile()
-
-    # Encode data
     encode_data()
 
-    # Upload to Valkey
+    # Upload data to search backend
     store_vectors()
 
     print("Hello Valkey!")
@@ -93,7 +132,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "bootstrap":
-        bootstrap(args.config_path)
+        bootstrap(args.env_config, args.profile_config)
     else:
         parser.print_help()
 

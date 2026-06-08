@@ -32,6 +32,10 @@ class FakeValkey:
         """
         return True
 
+    def execute_command(self, *args: object, **kwargs: object) -> None:
+        """Simulate command execution (no-op)."""
+        return None
+
     def get_connection_kwargs(self) -> dict[str, str | int]:
         """Return simulated connection kwargs.
 
