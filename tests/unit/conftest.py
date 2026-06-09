@@ -8,9 +8,9 @@ from bss_valkey.valkey_client import ValkeyClient
 
 @pytest.fixture()
 def mock_client(mocker: MockerFixture) -> ValkeyClient:
-    """Return a mock ValkeyClient with a mock underlying client."""
+    """Return a mock ValkeyClient with a mock execute_command."""
     client = mocker.MagicMock(spec=ValkeyClient)
-    client.client.execute_command = mocker.MagicMock()
+    client.execute_command = mocker.MagicMock()
     return client  # type: ignore[no-any-return]  # mock satisfies ValkeyClient at runtime
 
 

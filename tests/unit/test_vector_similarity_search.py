@@ -238,7 +238,7 @@ def test_create_index_calls_execute_command(
     """create_index calls execute_command with the built command."""
     create_index(mock_client, fake_profile_config)
 
-    mock_client.client.execute_command.assert_called_once()  # type: ignore[attr-defined]  # mock
-    cmd = mock_client.client.execute_command.call_args[0]  # type: ignore[attr-defined]  # mock
+    mock_client.execute_command.assert_called_once()  # type: ignore[attr-defined]  # mock
+    cmd = mock_client.execute_command.call_args[0]  # type: ignore[attr-defined]  # mock
     assert cmd[0] == "FT.CREATE"
     assert cmd[1] == fake_profile_config["index_name"]

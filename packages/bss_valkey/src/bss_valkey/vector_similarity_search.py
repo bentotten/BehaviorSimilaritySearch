@@ -148,7 +148,7 @@ def create_index(client: ValkeyClient, index_config_data: dict[str, object]) -> 
         index_config_data: Raw config dict for a single index.
     """
     cmd = build_create_index_command(index_config_data)
-    client.client.execute_command(*cmd)  # type: ignore[no-untyped-call]
+    client.execute_command(*cmd)
 
 
 def store_vectors() -> None:

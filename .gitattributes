@@ -1,0 +1,8 @@
+# Binary files — mark as binary to prevent diff noise and enable future LFS migration.
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.gif binary
+*.bmp binary
+*.tiff binary
+*.webp binary

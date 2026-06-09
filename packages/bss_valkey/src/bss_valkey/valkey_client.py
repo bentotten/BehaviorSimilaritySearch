@@ -98,6 +98,17 @@ class ValkeyClient:
         """Return the underlying Valkey port."""
         return self._port
 
+    def execute_command(self, *args: str | int) -> object:
+        """Execute a raw Valkey command.
+
+        Args:
+            *args: Command tokens (e.g. "FT.CREATE", index_name, ...).
+
+        Returns:
+            The server response.
+        """
+        return self._client.execute_command(*args)  # type: ignore[no-untyped-call]
+
     def ping(
         self,
         max_retries: int = DEFAULT_MAX_PING_RETRIES,
