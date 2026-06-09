@@ -31,13 +31,13 @@ class VectorFieldConfig:
     See: https://github.com/valkey-io/valkey-search/blob/main/QUICK_START.md#working-with-vector-search
     """
 
-    #: Field name in the hash/JSON document
+    #: Field name in the hash/JSON sample
     field_name: str
     #: Index algorithm (e.g. FLAT, HNSW)
     algorithm: str
     #: Element data type (e.g. FLOAT32)
     vector_type: str
-    #: Number of dimensions
+    #: Dimensionality of vectors stored in this field (e.g. 512)
     dim: int
     #: Distance metric (e.g. L2, IP, COSINE)
     distance_metric: str
@@ -60,7 +60,7 @@ class IndexConfig:
     skip_initial_scan: bool = False
 
 
-def build_command(index_config_data: dict[str, object]) -> list[str | int]:
+def build_create_index_command(index_config_data: dict[str, object]) -> list[str | int]:
     """Build an FT.CREATE command from raw config data (e.g. parsed from YAML).
 
     Args:
@@ -147,7 +147,7 @@ def create_index(client: ValkeyClient, index_config_data: dict[str, object]) -> 
         client: The ValkeyClient instance.
         index_config_data: Raw config dict for a single index.
     """
-    cmd = build_command(index_config_data)
+    cmd = build_create_index_command(index_config_data)
     client.client.execute_command(*cmd)  # type: ignore[no-untyped-call]
 
 

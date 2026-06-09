@@ -155,7 +155,7 @@ def test_start_search_backend_creates_backend_with_custom_values(
     start_search_backend(Path(str(env_path)))
 
     mock_load.assert_called_once_with(env_path)
-    mock_get_client.assert_called_once_with(host=host, port=port)
+    mock_get_client.assert_called_once_with(host=host, port=int(port))
     mock_client.ping.assert_called_once_with(
         max_retries=int(max_retries),
         retry_delay=int(retry_delay),

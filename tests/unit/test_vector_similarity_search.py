@@ -7,7 +7,7 @@ from bss_valkey.valkey_client import ValkeyClient
 from bss_valkey.vector_similarity_search import (
     IndexConfig,
     VectorFieldConfig,
-    build_command,
+    build_create_index_command,
     create_index,
 )
 
@@ -46,9 +46,9 @@ def test_index_config_skip_initial_scan_defaults_to_false() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_build_command_minimal(fake_profile_config: dict[str, object]) -> None:
-    """build_command produces correct command with minimal config."""
-    cmd = build_command(fake_profile_config)
+def test_build_create_index_command_minimal(fake_profile_config: dict[str, object]) -> None:
+    """build_create_index_command produces correct command with minimal config."""
+    cmd = build_create_index_command(fake_profile_config)
 
     index_config = fake_profile_config["index_config"]
     vector_field = fake_profile_config["vector_field"]
@@ -78,8 +78,8 @@ def test_build_command_minimal(fake_profile_config: dict[str, object]) -> None:
     assert cmd[schema_idx + 10] == vector_field["distance_metric"]
 
 
-def test_build_command_includes_skip_initial_scan() -> None:
-    """build_command includes SKIPINITIALSCAN when configured."""
+def test_build_create_index_command_includes_skip_initial_scan() -> None:
+    """build_create_index_command includes SKIPINITIALSCAN when configured."""
     config: dict[str, object] = {
         "index_name": "idx",
         "index_config": {
@@ -95,12 +95,12 @@ def test_build_command_includes_skip_initial_scan() -> None:
             "distance_metric": "L2",
         },
     }
-    cmd = build_command(config)
+    cmd = build_create_index_command(config)
     assert "SKIPINITIALSCAN" in cmd
 
 
-def test_build_command_multiple_prefixes() -> None:
-    """build_command handles multiple prefixes."""
+def test_build_create_index_command_multiple_prefixes() -> None:
+    """build_create_index_command handles multiple prefixes."""
     config: dict[str, object] = {
         "index_name": "multi_idx",
         "index_config": {
@@ -115,7 +115,7 @@ def test_build_command_multiple_prefixes() -> None:
             "distance_metric": "IP",
         },
     }
-    cmd = build_command(config)
+    cmd = build_create_index_command(config)
     prefix_idx = cmd.index("PREFIX")
     assert cmd[prefix_idx + 1] == 2
     assert cmd[prefix_idx + 2] == "frame:"
@@ -123,12 +123,12 @@ def test_build_command_multiple_prefixes() -> None:
 
 
 # ---------------------------------------------------------------------------
-# build_command — HNSW params
+# build_create_index_command — HNSW params
 # ---------------------------------------------------------------------------
 
 
-def test_build_command_includes_all_hnsw_params() -> None:
-    """build_command includes all HNSW tuning params when set."""
+def test_build_create_index_command_includes_all_hnsw_params() -> None:
+    """build_create_index_command includes all HNSW tuning params when set."""
     config: dict[str, object] = {
         "index_name": "idx",
         "index_config": {
@@ -149,7 +149,7 @@ def test_build_command_includes_all_hnsw_params() -> None:
             },
         },
     }
-    cmd = build_command(config)
+    cmd = build_create_index_command(config)
     assert "INITIAL_CAP" in cmd
     assert 10000 in cmd
     assert "M" in cmd
@@ -160,8 +160,8 @@ def test_build_command_includes_all_hnsw_params() -> None:
     assert 10 in cmd
 
 
-def test_build_command_includes_partial_hnsw_params() -> None:
-    """build_command only includes HNSW params that are set."""
+def test_build_create_index_command_includes_partial_hnsw_params() -> None:
+    """build_create_index_command only includes HNSW params that are set."""
     config: dict[str, object] = {
         "index_name": "idx",
         "index_config": {
@@ -180,7 +180,7 @@ def test_build_command_includes_partial_hnsw_params() -> None:
             },
         },
     }
-    cmd = build_command(config)
+    cmd = build_create_index_command(config)
     assert "M" in cmd
     assert 32 in cmd
     assert "EF_RUNTIME" in cmd
@@ -189,7 +189,7 @@ def test_build_command_includes_partial_hnsw_params() -> None:
     assert "EF_CONSTRUCTION" not in cmd
 
 
-def test_build_command_hnsw_params_attr_count_is_correct() -> None:
+def test_build_create_index_command_hnsw_params_attr_count_is_correct() -> None:
     """attr_count accounts for HNSW params in addition to base vector attributes."""
     config: dict[str, object] = {
         "index_name": "idx",
@@ -209,19 +209,19 @@ def test_build_command_hnsw_params_attr_count_is_correct() -> None:
             },
         },
     }
-    cmd = build_command(config)
+    cmd = build_create_index_command(config)
     schema_idx = cmd.index("SCHEMA")
     # attr_count = TYPE, FLOAT32, DIM, 64, DISTANCE_METRIC, COSINE, INITIAL_CAP, 5000, M, 8 = 10
     assert cmd[schema_idx + 4] == 10
 
 
 # ---------------------------------------------------------------------------
-# build_command — FLAT algorithm
+# build_create_index_command — FLAT algorithm
 # ---------------------------------------------------------------------------
 
 
-def test_build_command_flat_algorithm_no_hnsw() -> None:
-    """build_command works with FLAT algorithm and no HNSW params."""
+def test_build_create_index_command_flat_algorithm_no_hnsw() -> None:
+    """build_create_index_command works with FLAT algorithm and no HNSW params."""
     config: dict[str, object] = {
         "index_name": "flat_idx",
         "index_config": {
@@ -236,7 +236,7 @@ def test_build_command_flat_algorithm_no_hnsw() -> None:
             "distance_metric": "L2",
         },
     }
-    cmd = build_command(config)
+    cmd = build_create_index_command(config)
     assert "FLAT" in cmd
     assert "INITIAL_CAP" not in cmd
     assert "M" not in cmd
