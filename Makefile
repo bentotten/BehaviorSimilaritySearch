@@ -10,7 +10,7 @@ COMPOSE_ENV ?= configs/local.env
 
 .PHONY: clean clean-build clean-pyc clean-test clean-docs
 
-clean: clean-build clean-pyc clean-test
+clean: clean-build clean-pyc clean-test clean-docs
 
 clean-build:
 	rm -fr build/
