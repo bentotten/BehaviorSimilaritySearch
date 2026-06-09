@@ -52,7 +52,6 @@ def test_build_create_index_command_minimal(fake_profile_config: dict[str, objec
     assert cmd[schema_idx + 1] == vector_field["field_name"]
     assert cmd[schema_idx + 2] == "VECTOR"
     assert cmd[schema_idx + 3] == vector_field["algorithm"]
-    # attr_count = TYPE, FLOAT32, DIM, 512, DISTANCE_METRIC, COSINE = 6
     assert cmd[schema_idx + 4] == 6
     assert cmd[schema_idx + 5] == "TYPE"
     assert cmd[schema_idx + 6] == vector_field["vector_type"]
