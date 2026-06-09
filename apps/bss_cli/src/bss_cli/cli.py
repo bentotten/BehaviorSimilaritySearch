@@ -22,8 +22,6 @@ from bss_valkey.vector_similarity_search import create_index, store_vectors
 
 #: Default file for environment/connection configurations
 DEFAULT_ENV_CONFIG_PATH = Path("configs/local.env")
-#: Default file for vector index profile configurations
-DEFAULT_PROFILE_CONFIG_PATH = Path("configs/profiles.yaml")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,13 +40,6 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_ENV_CONFIG_PATH,
         metavar="PATH",
         help=f"Path to environment/connection config file (default: {DEFAULT_ENV_CONFIG_PATH}).",
-    )
-    parser.add_argument(
-        "--profile_config",
-        type=Path,
-        default=DEFAULT_PROFILE_CONFIG_PATH,
-        metavar="PATH",
-        help=f"Path to vector index profile config file (default: {DEFAULT_PROFILE_CONFIG_PATH}).",
     )
 
     subparsers = parser.add_subparsers(dest="command")
@@ -80,12 +71,10 @@ def start_search_backend(env_config_path: Path) -> None:
     client.ping(max_retries=max_retries, retry_delay=retry_delay)
 
 
-def create_profiles(profile_config_path: Path) -> None:
+def create_profiles() -> None:
     """Create search profiles with the search backend"""
 
-    # TODO: Update load function
-    # profile_config: dict[str, str] = load_config(profile_config_path)
-    _unused = profile_config_path
+    # TODO: Load from profile file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25)
     profile_config: dict[str, Any] = {
         "index_name": "fake_index",
         "index_config": {
@@ -105,18 +94,17 @@ def create_profiles(profile_config_path: Path) -> None:
     create_index(get_client(), profile_config)
 
 
-def bootstrap(env_config_path: Path, profile_config_path: Path) -> None:
+def bootstrap(env_config_path: Path) -> None:
     """Bootstrap search backend (e.g. Valkey).
 
     Args:
         env_config_path: Path to the config file to load.
-        profile_config_path: Path to the vector index profile config file.
-
     """
 
     start_search_backend(env_config_path)
 
-    create_profiles(profile_config_path)
+    # TODO: Load from profile file (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25))
+    create_profiles()
 
     load_data()
 
@@ -137,7 +125,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "bootstrap":
-        bootstrap(args.env_config, args.profile_config)
+        bootstrap(args.env_config)
     else:
         parser.print_help()
 

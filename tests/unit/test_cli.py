@@ -9,7 +9,6 @@ from bss_cli import (
     DEFAULT_ENV_CONFIG_PATH,
     DEFAULT_MAX_PING_RETRIES,
     DEFAULT_PING_RETRY_DELAY,
-    DEFAULT_PROFILE_CONFIG_PATH,
     DEFAULT_VALKEY_HOST,
     DEFAULT_VALKEY_PORT,
     __version__,
@@ -53,22 +52,21 @@ def test_main_dispatches_bootstrap(mocker: MockerFixture) -> None:
 
     main()
 
-    mock_bootstrap.assert_called_once_with(DEFAULT_ENV_CONFIG_PATH, DEFAULT_PROFILE_CONFIG_PATH)
+    mock_bootstrap.assert_called_once_with(DEFAULT_ENV_CONFIG_PATH)
 
 
 def test_main_dispatches_bootstrap_with_custom_paths(mocker: MockerFixture) -> None:
     """main() passes custom paths to bootstrap() when provided."""
     env_path = "configs/prod.env"
-    profile_path = "configs/prod_profiles.yaml"
     mocker.patch(
         "sys.argv",
-        ["bss", "--env_config", env_path, "--profile_config", profile_path, "bootstrap"],
+        ["bss", "--env_config", env_path, "bootstrap"],
     )
     mock_bootstrap = mocker.patch("bss_cli.cli.bootstrap")
 
     main()
 
-    mock_bootstrap.assert_called_once_with(Path(env_path), Path(profile_path))
+    mock_bootstrap.assert_called_once_with(Path(env_path))
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +78,6 @@ def test_parser_default_configs() -> None:
     """Config paths default to proper defaults."""
     bootstrap_args = build_parser().parse_args(["bootstrap"])
     assert bootstrap_args.env_config == DEFAULT_ENV_CONFIG_PATH
-    assert bootstrap_args.profile_config == DEFAULT_PROFILE_CONFIG_PATH
 
 
 def test_parser_accepts_custom_env_config_path() -> None:
@@ -88,13 +85,6 @@ def test_parser_accepts_custom_env_config_path() -> None:
     custom_env_path = Path("configs/custom_path.env")
     args = build_parser().parse_args(["--env_config", str(custom_env_path), "bootstrap"])
     assert args.env_config == custom_env_path
-
-
-def test_parser_accepts_custom_profile_config_path() -> None:
-    """--profile_config accepts an explicit path."""
-    custom_profile_path = Path("configs/custom_profiles.yaml")
-    args = build_parser().parse_args(["--profile_config", str(custom_profile_path), "bootstrap"])
-    assert args.profile_config == custom_profile_path
 
 
 def test_parser_no_subcommand_sets_command_none() -> None:
@@ -219,25 +209,20 @@ def test_start_search_backend_raises_on_connection_failure(mocker: MockerFixture
 # ---------------------------------------------------------------------------
 
 
-def test_create_profiles_calls_create_index_with_config_dict(
+def test_create_profiles_calls_create_index_with_correct_config_dict(
     mocker: MockerFixture, fake_profile_config: dict[str, object]
 ) -> None:
     """create_profiles calls create_index with the expected config dict."""
 
-    # TODO: BEN - once loading yaml, update this
-    # mock_load = mocker.patch(
-    #     "bss_cli.cli.load_config",
-    #     return_value={},
-    # )
+    # TODO: Load from profile file (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25)
+    # Mock out and check load_config()
 
     mock_client = mocker.MagicMock()
     mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
     mock_create_index = mocker.patch("bss_cli.cli.create_index")
 
-    create_profiles(DEFAULT_PROFILE_CONFIG_PATH)
-
-    # TODO: BEN - once loading yaml, update this
-    # mock_load.assert_called_once_with(DEFAULT_PROFILE_CONFIG_PATH)
+    # TODO: Load from profile file (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25)
+    create_profiles()
 
     mock_create_index.assert_called_once_with(mock_client, fake_profile_config)
 
@@ -255,12 +240,12 @@ def test_bootstrap_calls_subfunctions_with_correct_values(mocker: MockerFixture)
     mock_encode_data = mocker.patch("bss_cli.cli.encode_data")
     mock_store_vectors = mocker.patch("bss_cli.cli.store_vectors")
 
-    bootstrap(DEFAULT_ENV_CONFIG_PATH, DEFAULT_PROFILE_CONFIG_PATH)
+    bootstrap(DEFAULT_ENV_CONFIG_PATH)
 
     # Normally we dont want to test implementation details in this way, but here we want to ensure
     # appropriate values are being passed through subcommand without becoming corrupted or switched.
     mock_start_search_backend_call.assert_called_once_with(DEFAULT_ENV_CONFIG_PATH)
-    mock_create_profiles.assert_called_once_with(DEFAULT_PROFILE_CONFIG_PATH)
+    mock_create_profiles.assert_called_once()
     mock_load_data.assert_called_once_with()
     mock_encode_data.assert_called_once_with()
     mock_store_vectors.assert_called_once_with()

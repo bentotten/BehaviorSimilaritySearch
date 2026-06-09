@@ -6,7 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 import bss_valkey.valkey_client as bss_valkey_client_module
-from bss_cli import DEFAULT_PROFILE_CONFIG_PATH, DEFAULT_VALKEY_HOST, DEFAULT_VALKEY_PORT
+from bss_cli import DEFAULT_VALKEY_HOST, DEFAULT_VALKEY_PORT
 from bss_cli.cli import bootstrap
 from tests.fakes.fake_valkey import FailingFakeValkey, FakeValkey
 
@@ -38,7 +38,7 @@ def test_bootstrap_happy_path(config_file_env_type: Path, mocker: MockerFixture)
     """bootstrap() completes without raising."""
     mocker.patch("bss_valkey.valkey_client.valkey.Valkey", return_value=FakeValkey())
 
-    bootstrap(config_file_env_type, DEFAULT_PROFILE_CONFIG_PATH)  # should not raise
+    bootstrap(config_file_env_type)  # should not raise
 
 
 def test_bootstrap_raises_with_unreachable_valkey(
@@ -48,4 +48,4 @@ def test_bootstrap_raises_with_unreachable_valkey(
     mocker.patch("bss_valkey.valkey_client.valkey.Valkey", return_value=FailingFakeValkey())
 
     with pytest.raises(ConnectionError, match="Could not connect"):
-        bootstrap(config_file_env_type, DEFAULT_PROFILE_CONFIG_PATH)
+        bootstrap(config_file_env_type)
