@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from bss_data.dataloader import load_data
+from bss_data.dataloader import DEFAULT_DATA_DIR, load_data
 from bss_encoder.encoder import encode_data
 
 from bss_core.config import load_config
@@ -39,6 +39,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_ENV_CONFIG_PATH,
         metavar="PATH",
         help=f"Path to environment/connection config file (default: {DEFAULT_ENV_CONFIG_PATH}).",
+    )
+    parser.add_argument(
+        "--data_path",
+        type=Path,
+        default=DEFAULT_DATA_DIR,
+        metavar="PATH",
+        help=f"Path to directory or bucket containing data (default: {DEFAULT_DATA_DIR}).",
     )
 
     subparsers = parser.add_subparsers(dest="command")
@@ -76,7 +83,7 @@ def start_search_backend(env_config_path: Path) -> None:
 
 
 def create_profiles() -> None:
-    """Create search profiles with the search backend"""
+    """Create search profiles with the search backend."""
 
     # TODO: Load from profile file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25)
     profile_config: dict[str, Any] = {
@@ -98,7 +105,7 @@ def create_profiles() -> None:
     create_index(get_client(), profile_config)
 
 
-def bootstrap(env_config_path: Path) -> None:
+def bootstrap(env_config_path: Path, data_path: Path) -> None:
     """Bootstrap search backend (e.g. Valkey).
 
     Args:
@@ -110,7 +117,7 @@ def bootstrap(env_config_path: Path) -> None:
     # TODO: Load from profile file (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25))
     create_profiles()
 
-    load_data()
+    load_data(data_path)
 
     encode_data()
 
@@ -129,7 +136,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "bootstrap":
-        bootstrap(args.env_config)
+        bootstrap(env_config_path=args.env_config, data_path=args.data_path)
     else:
         parser.print_help()
 

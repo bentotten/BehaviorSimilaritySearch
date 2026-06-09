@@ -8,6 +8,12 @@ A computer vision project to detect if specific behaviours are present in video 
     - [micromamba](#micromamba)
     - [Docker](#docker)
 - [Installation](#installation)
+- [Usage](#usage)
+    - [CLI Arguments](#cli-arguments)
+    - [Subcommands](#subcommands)
+- [Image Samples](#image-samples)
+    - [Supported Formats](#supported-formats)
+    - [Where to Save](#where-to-save)
 - [Deploying Packages Independently](#deploying-packages-independently)
 
 ## Prerequisites
@@ -99,6 +105,51 @@ To run:
 ```bash
 bss
 ```
+
+## Usage
+
+### CLI Arguments
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `--env_config PATH` | Path to environment/connection config file | `configs/local.env` |
+| `--data_path PATH` | Path to directory containing image data | `data/sample` |
+
+### Subcommands
+
+| Command | Description |
+|---------|-------------|
+| `bootstrap` | Bootstrap search backend, load data, encode, and store vectors |
+
+Example with custom paths:
+
+```bash
+bss --env_config configs/production.env --data_path /mnt/images bootstrap
+```
+
+## Image Samples
+
+### Supported Formats
+
+The dataloader supports the following image file extensions:
+
+- `.jpg`
+- `.jpeg`
+- `.png`
+
+### Where to Save
+
+Place image files in the `data/sample/` directory (the default data path). The directory structure should be flat — subdirectories are not currently traversed.
+
+```
+data/
+  sample/
+    image_001.png
+    image_002.jpg
+    scene_a.jpeg
+```
+
+
 
 To clean up local infrastructure:
 

@@ -6,6 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from bss_cli import (
+    DEFAULT_DATA_DIR,
     DEFAULT_ENV_CONFIG_PATH,
     DEFAULT_MAX_PING_RETRIES,
     DEFAULT_PING_RETRY_DELAY,
@@ -52,21 +53,26 @@ def test_main_dispatches_bootstrap(mocker: MockerFixture) -> None:
 
     main()
 
-    mock_bootstrap.assert_called_once_with(DEFAULT_ENV_CONFIG_PATH)
+    mock_bootstrap.assert_called_once_with(
+        env_config_path=DEFAULT_ENV_CONFIG_PATH, data_path=DEFAULT_DATA_DIR
+    )
 
 
 def test_main_dispatches_bootstrap_with_custom_paths(mocker: MockerFixture) -> None:
     """main() passes custom paths to bootstrap() when provided."""
     env_path = "configs/foo.env"
+    data_path = "data/custom"
     mocker.patch(
         "sys.argv",
-        ["bss", "--env_config", env_path, "bootstrap"],
+        ["bss", "--env_config", env_path, "--data_path", data_path, "bootstrap"],
     )
     mock_bootstrap = mocker.patch("bss_cli.cli.bootstrap")
 
     main()
 
-    mock_bootstrap.assert_called_once_with(Path(env_path))
+    mock_bootstrap.assert_called_once_with(
+        env_config_path=Path(env_path), data_path=Path(data_path)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -239,12 +245,12 @@ def test_bootstrap_calls_subfunctions_with_correct_values(mocker: MockerFixture)
     mock_encode_data = mocker.patch("bss_cli.cli.encode_data")
     mock_store_vectors = mocker.patch("bss_cli.cli.store_vectors")
 
-    bootstrap(DEFAULT_ENV_CONFIG_PATH)
+    bootstrap(DEFAULT_ENV_CONFIG_PATH, DEFAULT_DATA_DIR)
 
     # Normally we dont want to test implementation details in this way, but here we want to ensure
     # appropriate values are being passed through subcommand without becoming corrupted or switched.
     mock_start_search_backend_call.assert_called_once_with(DEFAULT_ENV_CONFIG_PATH)
     mock_create_profiles.assert_called_once()
-    mock_load_data.assert_called_once_with()
+    mock_load_data.assert_called_once_with(DEFAULT_DATA_DIR)
     mock_encode_data.assert_called_once_with()
     mock_store_vectors.assert_called_once_with()
