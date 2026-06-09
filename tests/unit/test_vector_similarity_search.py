@@ -1,8 +1,5 @@
 """Unit tests for bss_valkey.vector_similarity_search."""
 
-import pytest
-from pytest_mock import MockerFixture
-
 from bss_valkey.valkey_client import ValkeyClient
 from bss_valkey.vector_similarity_search import (
     IndexConfig,
@@ -10,19 +7,6 @@ from bss_valkey.vector_similarity_search import (
     build_create_index_command,
     create_index,
 )
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture()
-def mock_client(mocker: MockerFixture) -> ValkeyClient:
-    """Return a mock ValkeyClient with a mock underlying client."""
-    client = mocker.MagicMock(spec=ValkeyClient)
-    client.client.execute_command = mocker.MagicMock()
-    return client  # type: ignore [no-any-return] # Mock causing problems
-
 
 # ---------------------------------------------------------------------------
 # Dataclass defaults

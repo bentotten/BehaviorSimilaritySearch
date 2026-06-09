@@ -1,6 +1,17 @@
 """Shared functionality and fixtures for unit tests."""
 
 import pytest
+from pytest_mock import MockerFixture
+
+from bss_valkey.valkey_client import ValkeyClient
+
+
+@pytest.fixture()
+def mock_client(mocker: MockerFixture) -> ValkeyClient:
+    """Return a mock ValkeyClient with a mock underlying client."""
+    client = mocker.MagicMock(spec=ValkeyClient)
+    client.client.execute_command = mocker.MagicMock()
+    return client  # type: ignore[no-any-return]  # mock satisfies ValkeyClient at runtime
 
 
 @pytest.fixture()
