@@ -5,9 +5,9 @@ import pytest
 
 @pytest.fixture()
 def fake_profile_config() -> dict[str, object]:
-    """Return the hardcoded profile config dict that create_profiles currently produces."""
+    """Create fake profile configurations."""
     return {
-        "index_name": "fake_index",
+        "index_name": "profile_1",
         "index_config": {
             "data_structure": "HASH",
             "prefixes": ["frame:"],
@@ -19,4 +19,15 @@ def fake_profile_config() -> dict[str, object]:
             "dim": 512,
             "distance_metric": "COSINE",
         },
+    }
+
+
+@pytest.fixture()
+def fake_env_config() -> dict[str, str]:
+    """Create fake environment/connection configurations for the search backend."""
+    return {
+        "VALKEY_HOST": "10.0.0.1",
+        "VALKEY_PORT": "6380",
+        "VALKEY_PING_MAX_RETRIES": "99",
+        "VALKEY_PING_RETRY_DELAY": "999",
     }

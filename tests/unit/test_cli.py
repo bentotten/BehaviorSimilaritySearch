@@ -41,7 +41,7 @@ def test_main_no_args_prints_help(
     # and exits with an unrecognised argument error.
     mocker.patch("sys.argv", ["bss"])
     main()
-    # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)s
+    # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
     assert capsys.readouterr().out == build_parser().format_help()
 
 
@@ -57,7 +57,7 @@ def test_main_dispatches_bootstrap(mocker: MockerFixture) -> None:
 
 def test_main_dispatches_bootstrap_with_custom_paths(mocker: MockerFixture) -> None:
     """main() passes custom paths to bootstrap() when provided."""
-    env_path = "configs/prod.env"
+    env_path = "configs/foo.env"
     mocker.patch(
         "sys.argv",
         ["bss", "--env_config", env_path, "bootstrap"],
@@ -102,9 +102,7 @@ def test_parser_bootstrap_is_valid_subcommand() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_start_search_backend_creates_backend_with_correct_values(
-    mocker: MockerFixture,
-) -> None:
+def test_start_search_backend_creates_backend_with_correct_values(mocker: MockerFixture) -> None:
     """start_search_backend reads config and calls subfunctions with correct values."""
     host = DEFAULT_VALKEY_HOST
     port = DEFAULT_VALKEY_PORT
@@ -133,14 +131,14 @@ def test_start_search_backend_creates_backend_with_correct_values(
 
 
 def test_start_search_backend_creates_backend_with_custom_values(
-    mocker: MockerFixture,
+    mocker: MockerFixture, fake_env_config: dict[str, str]
 ) -> None:
     """start_search_backend reads config and calls subfunctions with correct values."""
     env_path = Path("foobar")
-    host = "foo"
-    port = "1234"
-    max_retries = "99"
-    retry_delay = "999"
+    host = fake_env_config["VALKEY_HOST"]
+    port = fake_env_config["VALKEY_PORT"]
+    max_retries = fake_env_config["VALKEY_PING_MAX_RETRIES"]
+    retry_delay = fake_env_config["VALKEY_PING_RETRY_DELAY"]
 
     mock_load = mocker.patch(
         "bss_cli.cli.load_config",
@@ -154,19 +152,20 @@ def test_start_search_backend_creates_backend_with_custom_values(
     mock_client = mocker.MagicMock()
     mock_get_client = mocker.patch("bss_cli.cli.get_client", return_value=mock_client)
 
-    start_search_backend(env_path)
+    start_search_backend(Path(str(env_path)))
 
     mock_load.assert_called_once_with(env_path)
-    mock_get_client.assert_called_once_with(host=host, port=int(port))
+    mock_get_client.assert_called_once_with(host=host, port=port)
     mock_client.ping.assert_called_once_with(
-        max_retries=int(max_retries), retry_delay=int(retry_delay)
+        max_retries=int(max_retries),
+        retry_delay=int(retry_delay),
     )
 
 
 def test_start_search_backend_uses_defaults_when_config_keys_absent(
     mocker: MockerFixture,
 ) -> None:
-    """start_search_backend falls back to defaults when config has no Valkey keys."""
+    """start_search_backend falls back to defaults when config has no keys."""
     mocker.patch("bss_cli.cli.load_config", return_value={})
     mock_client = mocker.MagicMock()
     mock_client.ping.return_value = None

@@ -4,7 +4,6 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-# TODO: BEN - use explicit exports instead
 from bss_data.dataloader import load_data
 from bss_encoder.encoder import encode_data
 
@@ -53,7 +52,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def start_search_backend(env_config_path: Path) -> None:
-    """Start and initialize search backend (e.g. Valkey server)."""
+    """Start and initialize search backend (e.g. Valkey server).
+
+    Args:
+        env_config_path: Path to the config file to load.
+    """
     search_backend_config: dict[str, str] = load_config(env_config_path)
 
     host: str = search_backend_config.get("VALKEY_HOST", DEFAULT_VALKEY_HOST)
@@ -67,6 +70,7 @@ def start_search_backend(env_config_path: Path) -> None:
 
     # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
     print(f"Pinging Valkey at {host}:{port} ...", end=" ", flush=True)
+
     client = get_client(host=host, port=port)
     client.ping(max_retries=max_retries, retry_delay=retry_delay)
 
@@ -76,7 +80,7 @@ def create_profiles() -> None:
 
     # TODO: Load from profile file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25)
     profile_config: dict[str, Any] = {
-        "index_name": "fake_index",
+        "index_name": "profile_1",
         "index_config": {
             "data_structure": "HASH",
             "prefixes": ["frame:"],
