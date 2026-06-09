@@ -2,6 +2,10 @@
 
 import argparse
 from pathlib import Path
+from typing import Any
+
+from bss_data.dataloader import load_data
+from bss_encoder.encoder import encode_data
 
 from bss_core.config import load_config
 
@@ -13,9 +17,10 @@ from bss_valkey import (
     DEFAULT_VALKEY_PORT,
 )
 from bss_valkey.valkey_client import get_client
+from bss_valkey.vector_similarity_search import create_index, store_vectors
 
-#: Default file for configurations
-DEFAULT_CONFIG_PATH = Path("configs/local.env")
+#: Default file for environment/connection configurations
+DEFAULT_ENV_CONFIG_PATH = Path("configs/local.env")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,11 +34,11 @@ def build_parser() -> argparse.ArgumentParser:
         description="Behavior Similarity Search.",
     )
     parser.add_argument(
-        "--config_path",
+        "--env_config",
         type=Path,
-        default=DEFAULT_CONFIG_PATH,
+        default=DEFAULT_ENV_CONFIG_PATH,
         metavar="PATH",
-        help=f"Path to configuration file (default: {DEFAULT_CONFIG_PATH}).",
+        help=f"Path to environment/connection config file (default: {DEFAULT_ENV_CONFIG_PATH}).",
     )
 
     subparsers = parser.add_subparsers(dest="command")
@@ -46,23 +51,72 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def bootstrap(config_path: Path) -> None:
-    """Bootstrap search backend (e.g. Valkey).
+def start_search_backend(env_config_path: Path) -> None:
+    """Start and initialize search backend (e.g. Valkey server).
 
     Args:
-        config_path: Path to the config file to load.
+        env_config_path: Path to the config file to load.
     """
-    config: dict[str, str] = load_config(config_path)
-    host: str = config.get("VALKEY_HOST", DEFAULT_VALKEY_HOST)
-    port: int = int(config.get("VALKEY_PORT", DEFAULT_VALKEY_PORT))
-    max_retries: int = int(config.get("VALKEY_PING_MAX_RETRIES", DEFAULT_MAX_PING_RETRIES))
-    retry_delay: int = int(config.get("VALKEY_PING_RETRY_DELAY", DEFAULT_PING_RETRY_DELAY))
+    search_backend_config: dict[str, str] = load_config(env_config_path)
+
+    host: str = search_backend_config.get("VALKEY_HOST", DEFAULT_VALKEY_HOST)
+    port: int = int(search_backend_config.get("VALKEY_PORT", DEFAULT_VALKEY_PORT))
+    max_retries: int = int(
+        search_backend_config.get("VALKEY_PING_MAX_RETRIES", DEFAULT_MAX_PING_RETRIES)
+    )
+    retry_delay: int = int(
+        search_backend_config.get("VALKEY_PING_RETRY_DELAY", DEFAULT_PING_RETRY_DELAY)
+    )
 
     # TODO: Replace with logger (https://github.com/bentotten/BehaviorSimilaritySearch/issues/17)
     print(f"Pinging Valkey at {host}:{port} ...", end=" ", flush=True)
 
     client = get_client(host=host, port=port)
     client.ping(max_retries=max_retries, retry_delay=retry_delay)
+
+
+def create_profiles() -> None:
+    """Create search profiles with the search backend"""
+
+    # TODO: Load from profile file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25)
+    profile_config: dict[str, Any] = {
+        "index_name": "profile_1",
+        "index_config": {
+            "data_structure": "HASH",
+            "prefixes": ["frame:"],
+        },
+        "vector_field": {
+            "field_name": "embedding",
+            "algorithm": "HNSW",
+            "vector_type": "FLOAT32",
+            "dim": 512,
+            "distance_metric": "COSINE",
+        },
+    }
+
+    # For Valkey, indices == profiles
+    create_index(get_client(), profile_config)
+
+
+def bootstrap(env_config_path: Path) -> None:
+    """Bootstrap search backend (e.g. Valkey).
+
+    Args:
+        env_config_path: Path to the config file to load.
+    """
+
+    start_search_backend(env_config_path)
+
+    # TODO: Load from profile file (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25))
+    create_profiles()
+
+    load_data()
+
+    encode_data()
+
+    # Upload data to search backend
+    store_vectors()
+
     print("Hello Valkey!")
 
 
@@ -75,7 +129,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "bootstrap":
-        bootstrap(args.config_path)
+        bootstrap(args.env_config)
     else:
         parser.print_help()
 
