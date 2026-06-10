@@ -1,5 +1,16 @@
+# WORK IN PROGRESS
+For current progress, see `apps/bss_cli/src/bss_cli/cli.py`.
+
+Ultimate vision: `Multi-modal stream from the edge -> autoencoder -> Valkey VSS -> Confidence score` to determine if a set of data contains known behaviors. Behavior embeddings should be pre-loaded to Valkey. 
+
+## Current State
+- Launches local Valkey server
+- Loads initial profile as a Valkey VSS index
+- Read in a sample image (my cat in a bucket)
+
 # BehaviorSimilaritySearch
 A computer vision project to detect if specific behaviours are present in video segments.
+
 
 ## Table of Contents
 
