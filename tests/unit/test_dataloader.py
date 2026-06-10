@@ -1,12 +1,16 @@
 """Unit tests for bss_data.dataloader."""
 
+from io import BytesIO
 from pathlib import Path
 
+import numpy as np
 import pytest
 from bss_data.dataloader import (
     ImageSample,
+    image_bytes_to_numpy,
     load_data,
 )
+from PIL import Image, UnidentifiedImageError
 
 # ---------------------------------------------------------------------------
 # load_data
@@ -102,3 +106,124 @@ def test_load_data_loads_only_images_from_mixed_directory(tmp_path: Path) -> Non
     filenames = [sample["filename"] for sample in results]
     assert "photo.jpg" in filenames
     assert "diagram.png" in filenames
+
+
+# ---------------------------------------------------------------------------
+# image_bytes_to_numpy
+# ---------------------------------------------------------------------------
+
+
+def _encode_pil_image(image: Image.Image, image_format: str = "PNG") -> bytes:
+    """Encode a PIL image to bytes using the requested image format."""
+    buffer = BytesIO()
+    image.save(buffer, format=image_format)
+    return buffer.getvalue()
+
+
+def _make_rgb_png_bytes(
+    width: int = 4,
+    height: int = 3,
+    color: tuple[int, int, int] = (255, 0, 0),
+) -> bytes:
+    """Return PNG bytes for a solid-color RGB image."""
+    return _encode_pil_image(Image.new("RGB", (width, height), color=color))
+
+
+def test_image_bytes_to_numpy_returns_empty_list_for_empty_input() -> None:
+    """image_bytes_to_numpy returns an empty list when given no samples."""
+    assert image_bytes_to_numpy([]) == []
+
+
+def test_image_bytes_to_numpy_returns_one_array_per_sample() -> None:
+    """image_bytes_to_numpy returns one numpy array per input sample."""
+    samples: list[ImageSample] = [
+        {"filename": "a.png", "data": _make_rgb_png_bytes()},
+        {"filename": "b.png", "data": _make_rgb_png_bytes()},
+        {"filename": "c.png", "data": _make_rgb_png_bytes()},
+    ]
+
+    arrays = image_bytes_to_numpy(samples)
+
+    assert len(arrays) == 3
+    assert all(isinstance(array, np.ndarray) for array in arrays)
+
+
+def test_image_bytes_to_numpy_returns_uint8_rgb_arrays() -> None:
+    """Decoded arrays are shape (H, W, 3) and dtype uint8."""
+    width, height = 5, 4
+    samples: list[ImageSample] = [
+        {"filename": "a.png", "data": _make_rgb_png_bytes(width=width, height=height)}
+    ]
+
+    arrays = image_bytes_to_numpy(samples)
+
+    assert arrays[0].dtype == np.uint8
+    assert arrays[0].ndim == 3
+    assert arrays[0].shape == (height, width, 3)
+
+
+def test_image_bytes_to_numpy_preserves_pixel_values() -> None:
+    """Decoded array contains the original solid color."""
+    samples: list[ImageSample] = [
+        {"filename": "red.png", "data": _make_rgb_png_bytes(2, 2, color=(255, 0, 0))}
+    ]
+
+    arrays = image_bytes_to_numpy(samples)
+
+    expected = np.full((2, 2, 3), [255, 0, 0], dtype=np.uint8)
+    np.testing.assert_array_equal(arrays[0], expected)
+
+
+def test_image_bytes_to_numpy_converts_grayscale_to_rgb() -> None:
+    """Single-channel images are converted to 3-channel RGB."""
+    grayscale_bytes = _encode_pil_image(Image.new("L", (3, 3), color=128))
+    samples: list[ImageSample] = [{"filename": "g.png", "data": grayscale_bytes}]
+
+    arrays = image_bytes_to_numpy(samples)
+
+    assert arrays[0].shape == (3, 3, 3)
+    assert arrays[0].dtype == np.uint8
+
+
+def test_image_bytes_to_numpy_converts_rgba_to_rgb() -> None:
+    """RGBA images are converted to 3-channel RGB (alpha discarded)."""
+    rgba_bytes = _encode_pil_image(Image.new("RGBA", (2, 2), color=(10, 20, 30, 128)))
+    samples: list[ImageSample] = [{"filename": "rgba.png", "data": rgba_bytes}]
+
+    arrays = image_bytes_to_numpy(samples)
+
+    assert arrays[0].shape == (2, 2, 3)
+
+
+def test_image_bytes_to_numpy_decodes_jpeg() -> None:
+    """JPEG-encoded bytes are accepted alongside PNG."""
+    jpeg_bytes = _encode_pil_image(Image.new("RGB", (4, 4), color=(0, 255, 0)), image_format="JPEG")
+    samples: list[ImageSample] = [{"filename": "a.jpg", "data": jpeg_bytes}]
+
+    arrays = image_bytes_to_numpy(samples)
+
+    assert arrays[0].shape == (4, 4, 3)
+    assert arrays[0].dtype == np.uint8
+
+
+def test_image_bytes_to_numpy_preserves_input_order() -> None:
+    """Output ordering matches the input sample ordering."""
+    samples: list[ImageSample] = [
+        {"filename": "a.png", "data": _make_rgb_png_bytes(2, 2, color=(10, 10, 10))},
+        {"filename": "b.png", "data": _make_rgb_png_bytes(2, 2, color=(20, 20, 20))},
+        {"filename": "c.png", "data": _make_rgb_png_bytes(2, 2, color=(30, 30, 30))},
+    ]
+
+    arrays = image_bytes_to_numpy(samples)
+
+    assert arrays[0][0, 0].tolist() == [10, 10, 10]
+    assert arrays[1][0, 0].tolist() == [20, 20, 20]
+    assert arrays[2][0, 0].tolist() == [30, 30, 30]
+
+
+def test_image_bytes_to_numpy_raises_on_undecodable_bytes() -> None:
+    """Invalid image bytes propagate a PIL error rather than being silently ignored."""
+    samples: list[ImageSample] = [{"filename": "broken.png", "data": b"not an image"}]
+
+    with pytest.raises(UnidentifiedImageError):
+        image_bytes_to_numpy(samples)

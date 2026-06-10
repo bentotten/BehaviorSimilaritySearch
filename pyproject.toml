@@ -58,6 +58,10 @@ files = [
     "tests",
 ]
 
+[[tool.mypy.overrides]]
+module = ["open_clip"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=packages/bss_core/src --cov=packages/bss_valkey/src --cov=apps/bss_cli/src --cov-report=term-missing"

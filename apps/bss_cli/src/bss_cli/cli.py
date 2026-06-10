@@ -4,8 +4,8 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from bss_data.dataloader import DEFAULT_DATA_DIR, load_data
-from bss_encoder.encoder import encode_data
+from bss_data.dataloader import DEFAULT_DATA_DIR, image_bytes_to_numpy, load_data
+from bss_encoder.encoder import EncoderConfig, get_encoder
 
 from bss_core.config import load_config
 
@@ -64,7 +64,6 @@ def start_search_backend(search_backend_config: dict[str, str]) -> None:
     Args:
         search_backend_config: Configurations for search backend host.
     """
-
     host: str = search_backend_config.get("VALKEY_HOST", DEFAULT_VALKEY_HOST)
     port: int = int(search_backend_config.get("VALKEY_PORT", DEFAULT_VALKEY_PORT))
     max_retries: int = int(
@@ -87,7 +86,6 @@ def create_profiles(profile_config: dict[str, Any]) -> None:
     Args:
         profile_config: Configurations for profile to use with search backend.
     """
-
     # For Valkey, indices == profiles
     create_index(get_client(), profile_config)
 
@@ -99,13 +97,13 @@ def bootstrap(env_config_path: Path, data_path: Path) -> None:
         env_config_path: Path to the config file to load.
         data_path: Path to the data directory.
     """
-
     search_backend_config: dict[str, str] = load_config(env_config_path)
 
-    # TODO: Load from file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/31)
-    encoder_config: dict[str, Any] = {
-        "embedding_dim": 512,
-    }
+    # TODO: Load from config file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/31)
+    encoder_config = EncoderConfig()
+
+    # Initialize the global encoder singleton
+    encoder = get_encoder(encoder_config)
 
     # TODO: Load from profile file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25)
     profile_config: dict[str, Any] = {
@@ -118,26 +116,23 @@ def bootstrap(env_config_path: Path, data_path: Path) -> None:
             "field_name": "embedding",
             "algorithm": "HNSW",
             "vector_type": "FLOAT32",
-            "dim": 512,
+            "dim": encoder.embedding_dim,
             "distance_metric": "COSINE",
         },
     }
 
-    assert profile_config["vector_field"]["dim"] == encoder_config["embedding_dim"], (
+    assert profile_config["vector_field"]["dim"] == encoder.embedding_dim, (
         f"Profile vector dim ({profile_config['vector_field']['dim']}) "
-        f"does not match encoder embedding dim ({encoder_config['embedding_dim']})"
+        f"does not match encoder embedding dim ({encoder.embedding_dim})"
     )
 
     start_search_backend(search_backend_config)
 
-    create_profiles(encoder_config)
+    create_profiles(profile_config)
 
     samples = load_data(data_path)
 
-    # ImageSample and MediaSample are structurally compatible TypedDicts —
-    # mypy enforces field matching at this boundary without import coupling.
-    # _embeddings = encode_data(samples, encoder_config)
-    encode_data()
+    _embeddings = get_encoder().encode_images(image_bytes_to_numpy(samples))
 
     # Upload data to search backend
     store_vectors()

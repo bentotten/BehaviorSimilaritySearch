@@ -1,7 +1,11 @@
 """Dataloader for BehaviorSimilaritySearch."""
 
+from io import BytesIO
 from pathlib import Path
 from typing import TypedDict
+
+import numpy as np
+from PIL import Image
 
 
 class ImageSample(TypedDict):
@@ -47,3 +51,28 @@ def load_data(data_path: Path = DEFAULT_DATA_DIR) -> list[ImageSample]:
             )
 
     return samples
+
+
+def image_bytes_to_numpy(samples: list[ImageSample]) -> list["np.ndarray"]:
+    """Decode raw image bytes into numpy arrays.
+
+    Converts each sample's raw bytes into an RGB numpy array suitable
+    for passing to an encoder.
+
+    Args:
+        samples: Loaded image samples with raw bytes.
+
+    Returns:
+        A list of numpy arrays with shape (height, width, 3) and dtype uint8.
+
+    TODO:
+        - Support video segment decoding (frame extraction).
+        - Add configurable resize / preprocessing options.
+    """
+
+    decoded: list[np.ndarray] = []
+    for sample in samples:
+        image = Image.open(BytesIO(sample["data"])).convert("RGB")
+        decoded.append(np.array(image))
+
+    return decoded

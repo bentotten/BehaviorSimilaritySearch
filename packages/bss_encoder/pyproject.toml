@@ -7,7 +7,12 @@ name = "behavior-similarity-search-encoder"
 version = "0.1.0"
 description = "Data encoding/decoding functionality for BehaviorSimilaritySearch."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "numpy>=1.26",
+    "open-clip-torch>=2.24",
+    "Pillow>=10.0",
+    "torch>=2.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
