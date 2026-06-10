@@ -5,6 +5,8 @@ from pytest_mock import MockerFixture
 
 from bss_valkey.valkey_client import ValkeyClient
 
+EMBEDDING_DIM = 512
+
 
 @pytest.fixture()
 def mock_client(mocker: MockerFixture) -> ValkeyClient:
@@ -27,7 +29,7 @@ def fake_profile_config() -> dict[str, object]:
             "field_name": "embedding",
             "algorithm": "HNSW",
             "vector_type": "FLOAT32",
-            "dim": 512,
+            "dim": EMBEDDING_DIM,
             "distance_metric": "COSINE",
         },
     }

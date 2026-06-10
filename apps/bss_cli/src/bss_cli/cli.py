@@ -58,13 +58,12 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def start_search_backend(env_config_path: Path) -> None:
+def start_search_backend(search_backend_config: dict[str, str]) -> None:
     """Start and initialize search backend (e.g. Valkey server).
 
     Args:
-        env_config_path: Path to the config file to load.
+        search_backend_config: Configurations for search backend host.
     """
-    search_backend_config: dict[str, str] = load_config(env_config_path)
 
     host: str = search_backend_config.get("VALKEY_HOST", DEFAULT_VALKEY_HOST)
     port: int = int(search_backend_config.get("VALKEY_PORT", DEFAULT_VALKEY_PORT))
@@ -82,8 +81,31 @@ def start_search_backend(env_config_path: Path) -> None:
     client.ping(max_retries=max_retries, retry_delay=retry_delay)
 
 
-def create_profiles() -> None:
-    """Create search profiles with the search backend."""
+def create_profiles(profile_config: dict[str, Any]) -> None:
+    """Create search profiles with the search backend.
+
+    Args:
+        profile_config: Configurations for profile to use with search backend.
+    """
+
+    # For Valkey, indices == profiles
+    create_index(get_client(), profile_config)
+
+
+def bootstrap(env_config_path: Path, data_path: Path) -> None:
+    """Bootstrap search backend (e.g. Valkey).
+
+    Args:
+        env_config_path: Path to the config file to load.
+        data_path: Path to the data directory.
+    """
+
+    search_backend_config: dict[str, str] = load_config(env_config_path)
+
+    # TODO: Load from file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/31)
+    encoder_config: dict[str, Any] = {
+        "embedding_dim": 512,
+    }
 
     # TODO: Load from profile file instead of hardcoded (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25)
     profile_config: dict[str, Any] = {
@@ -101,24 +123,20 @@ def create_profiles() -> None:
         },
     }
 
-    # For Valkey, indices == profiles
-    create_index(get_client(), profile_config)
+    assert profile_config["vector_field"]["dim"] == encoder_config["embedding_dim"], (
+        f"Profile vector dim ({profile_config['vector_field']['dim']}) "
+        f"does not match encoder embedding dim ({encoder_config['embedding_dim']})"
+    )
 
+    start_search_backend(search_backend_config)
 
-def bootstrap(env_config_path: Path, data_path: Path) -> None:
-    """Bootstrap search backend (e.g. Valkey).
+    create_profiles(encoder_config)
 
-    Args:
-        env_config_path: Path to the config file to load.
-    """
+    samples = load_data(data_path)
 
-    start_search_backend(env_config_path)
-
-    # TODO: Load from profile file (see: https://github.com/bentotten/BehaviorSimilaritySearch/issues/25))
-    create_profiles()
-
-    load_data(data_path)
-
+    # ImageSample and MediaSample are structurally compatible TypedDicts —
+    # mypy enforces field matching at this boundary without import coupling.
+    # _embeddings = encode_data(samples, encoder_config)
     encode_data()
 
     # Upload data to search backend
