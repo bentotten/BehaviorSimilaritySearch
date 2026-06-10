@@ -117,6 +117,18 @@ To run:
 bss
 ```
 
+To clean up infrastructure:
+
+```bash
+make down
+```
+
+To deactivate:
+
+```bash
+micromamba deactivate
+```
+
 ## Usage
 
 ### CLI Arguments
@@ -158,20 +170,6 @@ data/
     image_001.png
     image_002.jpg
     scene_a.jpeg
-```
-
-
-
-To clean up local infrastructure:
-
-```bash
-make down
-```
-
-To deactivate:
-
-```bash
-micromamba deactivate
 ```
 
 ## Deploying Packages Independently
