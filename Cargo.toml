@@ -6,6 +6,7 @@ members = [
     "crates/bss-encoder",
     "crates/bss-valkey",
     "crates/bss-cli",
+    "crates/bss-integration-tests",
 ]
 
 [workspace.package]
@@ -16,3 +17,5 @@ license = "MIT"
 [workspace.dependencies]
 thiserror = "2.0"
 dotenvy = "0.15"
+serde = { version = "1.0", features = ["derive"] }
+envy = "0.4"

@@ -15,7 +15,7 @@ release:
 	cargo build --workspace --release
 
 test:
-	cargo test --workspace
+	cargo nextest run --workspace
 
 lint:
 	cargo clippy --workspace -- -D warnings
