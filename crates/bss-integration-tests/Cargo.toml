@@ -1,0 +1,16 @@
+[package]
+name = "bss-integration-tests"
+description = "Workspace-level integration tests for BehaviorSimilaritySearch."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# This crate has no library — it exists only for integration tests.
+[lib]
+path = "src/lib.rs"
+
+[dev-dependencies]
+bss-core = { path = "../bss-core" }
+bss-data = { path = "../bss-data" }
+bss-encoder = { path = "../bss-encoder" }
+bss-valkey = { path = "../bss-valkey" }

@@ -3,127 +3,127 @@
 ## Table of Contents
 
 - [Project Structure](#project-structure)
-- [Environment Setup](#environment-setup-and-build)
+- [Prerequisites](#prerequisites)
+- [Environment Setup](#environment-setup)
 - [Running Checks](#running-checks)
-- [Running CI Locally](#running-ci-locally)
+- [Running Tests](#running-tests)
 - [Documentation](#documentation)
-- [Cleaning](#cleaning)
-- [Windows](#windows-note)
+- [Infrastructure](#infrastructure)
+- [Model Setup](#model-setup)
 
 ## Project Structure
 
-This project is a multi-package monorepo managed with [uv workspaces](https://docs.astral.sh/uv/concepts/workspaces/).
-
-Each package under `packages/` and `apps/` has its own `pyproject.toml` and can be installed and run independently on separate devices or instances.
-
 ```
-├── apps/              # Runnable applications
-│   └── ...
-├── configs/           # Loadable configuration files
-│   └── ...
-├── data/              # All data files (e.g. frames)
-│   └── ...
-├── docs/              # Autodoc configuration
-│   └── ...
-├── packages/          # Installable library packages
-│   └── ...
-├── tests/
-│   ├── unit/          # Per-package unit tests
-│   └── integration/   # Cross-package integration tests
-├── environment.yaml   # Micromamba environment (System dependencies and python version)
-└── pyproject.toml     # Python project configurations and Python dependencies
+├── crates/
+│   ├── bss-core/                   # Config loading, shared error types
+│   ├── bss-data/                   # Image loading
+│   ├── bss-encoder/                # Encoder trait + ONNX Runtime implementation
+│   ├── bss-valkey/                 # Valkey client + vector similarity search
+│   ├── bss-cli/                    # CLI binary
+│   └── bss-integration-tests/      # Workspace-level integration tests
+├── configs/                        # Environment/connection config files
+├── data/                           # Sample images for development
+├── models/                         # ML Models
+├── .github/workflows/              
+├── Cargo.toml                      
+├── docker-compose.yaml             # Local Valkey infrastructure
+└── Makefile                        
 ```
 
-## Environment Setup and Build
+## Prerequisites
 
-Create and activate the environment:
+- [Rust](https://rustup.rs/) stable (1.80+)
+- [Docker](https://docs.docker.com/get-docker/) with Compose v2
+- NVIDIA CUDA + TensorRT (optional — required for GPU acceleration)
+
+Install Rust via rustup:
 
 ```bash
-micromamba create -f environment.yaml
-micromamba activate behavior-similarity-search
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Then install the project:
+## Environment Setup
+
+Build all workspace crates:
 
 ```bash
 make build
 ```
 
-To deactivate:
+Start local infrastructure (Valkey):
 
 ```bash
-micromamba deactivate
+make up
 ```
 
-## Running Project
-
-| Command                | Description                                      |
-|------------------------|--------------------------------------------------|
-| `make build`           | Install all workspace packages and dev dependencies |
-| `make up`              | Launch docker-compose and any other infrastructure |
-| `make down`            | Tear down docker containers and and other infrastructure |
-
-
-## Running Checks and Building Docs
-
-| Command                | Description                                      |
-|------------------------|--------------------------------------------------|
-| `make ci`              | Run all checks in sequence (mirrors CI)          |
-| `make check-codestyle` | Check formatting without making changes          |
-| `make docs`            | Build HTML documentation                         |
-| `make format`          | Auto-fix lint and formatting issues (local only) |
-| `make lint`            | Check for code quality issues with ruff          |
-| `make test`            | Run the test suite with pytest                   |
-| `make type-check`      | Run static type checking with mypy               |
-
-
-## Cleaning
-
-| Command            | Description                                    |
-|--------------------|------------------------------------------------|
-| `make clean`       | Remove all build, pyc, and test artifacts      |
-| `make clean-build` | Remove build artifacts                         |
-| `make clean-docs`  | Remove generated documentation                 |
-| `make clean-pyc`   | Remove compiled Python files and `__pycache__` |
-| `make clean-test`  | Remove test and coverage artifacts             |
-
-## Running CI Release Workflow Locally
-
-[`act`](https://github.com/nektos/act) runs GitHub Actions workflows locally using Docker. It is installed as part of the micromamba environment.
-
-**Note:** Docker must be installed and running.
+To stop infrastructure:
 
 ```bash
-act
+make down
 ```
 
-To run a specific workflow or job:
+## Running Checks
+
+| Command | Description |
+|---------|-------------|
+| `make type-check` | Fast type checking without producing binaries (`cargo check`) |
+| `make lint` | Clippy static analysis, warnings treated as errors |
+| `make check-codestyle` | Verify formatting without making changes |
+| `make format` | Auto-format all code |
+| `make ci` | Run all checks in sequence — mirrors CI (`type-check`, `lint`, `check-codestyle`, `test`) |
+
+## Running Tests
 
 ```bash
-act -W .github/workflows/pre-merge.yaml
-act -j build
+# Run all tests
+make test
+
+# Run tests for a specific crate
+cargo test --package bss-core
+
+# Run workspace integration tests
+cargo test --package bss-integration-tests
+
+# Run integration tests that require infrastructure (Valkey must be running via make up)
+cargo test --package bss-integration-tests -- --include-ignored
 ```
 
-If you hit missing dependencies in the default runner image, use the full image:
+### Test Layout
 
-```bash
-act -P ubuntu-latest=catthehacker/ubuntu:full-latest
-```
+- **Per-crate tests** (`crates/*/tests/`): test each crate in isolation
+- **Workspace integration tests** (`crates/bss-integration-tests/tests/`): test cross-crate interactions and end-to-end workflows. Tests requiring live infrastructure are marked `#[ignore]` and must be run explicitly with `--include-ignored`.
 
 ## Documentation
 
-Docs are built with [Sphinx](https://www.sphinx-doc.org/) using Google-style docstrings and the [Furo](https://pradyunsg.me/furo/) theme.
-
-Build the HTML docs:
+Build and open rustdoc in a browser:
 
 ```bash
 make docs
 ```
 
-Output is written to `docs/_build/html/`. Open `docs/_build/html/index.html` in a browser to view.
+Doc comments follow standard Rust conventions (`///` for public items, `//!` for module-level docs).
 
-To remove generated docs:
+## Infrastructure
+
+Local infrastructure is managed with docker-compose. Configuration is loaded from `configs/local.env`.
 
 ```bash
-make clean-docs
+make up    # Start Valkey
+make down  # Stop Valkey
 ```
+
+Default connection settings (see `configs/local.env`):
+
+## Model Setup
+
+ONNX models must be exported from PyTorch before use. Example for YOLOv8:
+
+```python
+from ultralytics import YOLO
+model = YOLO('yolov8n.pt')
+model.export(format='onnx', dynamic=False, simplify=True)
+```
+
+Copy the exported `.onnx` file to `models/encoder.onnx`. TensorRT engine files (`.engine`) are also supported and will be preferred on NVIDIA hardware.
+
+Models are gitignored — they must be exported and placed locally before running `bootstrap`.
