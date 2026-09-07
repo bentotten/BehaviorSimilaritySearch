@@ -1,0 +1,8 @@
+[package]
+name = "bss-encoder"
+description = "Inference abstraction and ONNX Runtime encoder for BehaviorSimilaritySearch."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]

@@ -219,3 +219,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Rust
+target/
+Cargo.lock
+
+# ML models
+*.onnx
+*.engine
+*.trt
+models/*
+!models/.gitkeep

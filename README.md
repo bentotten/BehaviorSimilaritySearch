@@ -1,187 +1,114 @@
-# WORK IN PROGRESS
-For current progress, see `apps/bss_cli/src/bss_cli/cli.py`.
-
-Ultimate vision: `Multi-modal stream from the edge -> autoencoder -> Valkey VSS -> Confidence score` to determine if a set of data contains known behaviors. Behavior embeddings should be pre-loaded to Valkey. 
-
-## Current State
-- Launches local Valkey server
-- Loads initial profile as a Valkey VSS index
-- Read in a sample image (my cat in a bucket)
-
 # BehaviorSimilaritySearch
-A computer vision project to detect if specific behaviours are present in video segments.
 
+A computer vision system that detects whether specific behaviours are present in video segments.
 
-## Table of Contents
+**Vision**: Multi-modal stream from the edge → encoder → Valkey VSS → confidence score, to determine if a set of data contains known behaviours. Behaviour embeddings are pre-loaded to Valkey.
 
-- [Prerequisites](#prerequisites)
-    - [Note for Windows users](#note-for-windows-users)
-    - [micromamba](#micromamba)
-    - [Docker](#docker)
-- [Installation](#installation)
-- [Usage](#usage)
-    - [CLI Arguments](#cli-arguments)
-    - [Subcommands](#subcommands)
-- [Image Samples](#image-samples)
-    - [Supported Formats](#supported-formats)
-    - [Where to Save](#where-to-save)
-- [Deploying Packages Independently](#deploying-packages-independently)
+## Architecture
+
+```
+Edge device
+├── bss-cli          CLI entry point
+├── bss-encoder      ONNX Runtime inference (TensorRT / CUDA / CPU)
+├── bss-data         Image loading
+├── bss-valkey       Valkey client + vector similarity search
+└── bss-core         Config loading, shared error types
+```
+
+Inference backend is abstracted behind an `Encoder` trait, enabling a future migration from embedded ONNX/TensorRT to a Triton Inference Server without changing application code.
 
 ## Prerequisites
 
-
-### Note for Windows users
-
-This project uses `make` and bash tooling which are not natively available on Windows. The recommended approach is to use [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for Linux), which provides a full Linux environment.
-
-Install WSL2 with Ubuntu from PowerShell:
-
-```powershell
-wsl --install
-```
-
-Then follow the standard Linux setup instructions inside the WSL2 terminal.
-
-### micromamba
-
-This project uses [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) to manage the environment.
-
-**Linux, macOS, or Git Bash on Windows:**
-
-```bash
-"${SHELL}" <(curl -L micro.mamba.pm/install.sh)
-```
-
-**macOS (Homebrew):**
-
-```bash
-brew install micromamba
-```
-
-**Windows (PowerShell):**
-
-```powershell
-Invoke-Expression ((Invoke-WebRequest -Uri https://micro.mamba.pm/install.ps1 -UseBasicParsing).Content)
-```
-
-Once installed, micromamba can be updated at any time with:
-
-```bash
-micromamba self-update
-```
-
-### Docker
-
-This project uses Docker and the Compose v2 plugin to run local infrastructure.
-
-**Linux:**
-
-```bash
-sudo apt install docker.io docker-compose-v2
-```
-
-**macOS (Homebrew):**
-
-```bash
-brew install --cask docker
-```
-
-**Windows:**
-
-Install [Docker Desktop](https://www.docker.com/products/docker-desktop/), which includes Compose v2.
+- [Rust](https://rustup.rs/) stable (1.80+)
+- [Docker](https://docs.docker.com/get-docker/) with Compose v2
+- NVIDIA CUDA + TensorRT (optional, for GPU acceleration on Jetson/NVIDIA hardware)
 
 ## Installation
 
-Create and activate the environment:
-
 ```bash
-micromamba create -f environment.yaml
-micromamba activate behavior-similarity-search
-```
-
-Then install the project:
-
-```bash
+# Build all crates
 make build
-```
 
-Spin up infrastructure:
-
-```bash
+# Start Valkey
 make up
 ```
 
-To run:
-
-```bash
-bss
-```
-
-To clean up infrastructure:
-
-```bash
-make down
-```
-
-To deactivate:
-
-```bash
-micromamba deactivate
-```
-
 ## Usage
+
+```bash
+# Run the CLI
+cargo run --bin bss-cli -- --help
+
+# Bootstrap: initialize Valkey index, load images, encode, store vectors
+cargo run --bin bss-cli -- bootstrap
+
+# With custom paths
+cargo run --bin bss-cli -- --env-config configs/local.env --data-path data/sample bootstrap
+```
 
 ### CLI Arguments
 
 | Argument | Description | Default |
 |----------|-------------|---------|
-| `--env_config PATH` | Path to environment/connection config file | `configs/local.env` |
-| `--data_path PATH` | Path to directory containing image data | `data/sample` |
+| `--env-config PATH` | Path to environment/connection config file | `configs/local.env` |
+| `--data-path PATH` | Path to directory containing image data | `data/sample` |
 
 ### Subcommands
 
 | Command | Description |
 |---------|-------------|
-| `bootstrap` | Bootstrap search backend, load data, encode, and store vectors |
+| `bootstrap` | Initialize search backend, encode images, and store vectors |
 
-Example with custom paths:
+## Model Setup
 
-```bash
-bss --env_config configs/production.env --data_path /mnt/images bootstrap
+Models must be exported from PyTorch to ONNX before use. Example for YOLOv8:
+
+```python
+from ultralytics import YOLO
+model = YOLO('yolov8n.pt')
+model.export(format='onnx', dynamic=False, simplify=True)
+# Copy the output to models/encoder.onnx
 ```
+
+Place ONNX models in the `models/` directory. TensorRT engine files (`.engine`) are also supported.
+
+## Development
+
+| Command | Description |
+|---------|-------------|
+| `make build` | Compile all workspace crates |
+| `make test` | Run the full test suite |
+| `make lint` | Run clippy with warnings as errors |
+| `make check-codestyle` | Check formatting without changes |
+| `make format` | Auto-format all code |
+| `make ci` | Run all checks (mirrors CI) |
+| `make docs` | Build and open rustdoc |
+| `make up` | Start Valkey via docker-compose |
+| `make down` | Stop docker-compose services |
+| `make clean` | Remove build artifacts |
+
+## Configuration
+
+Connection settings are loaded from a `.env` file. Defaults:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `VALKEY_HOST` | `127.0.0.1` | Valkey server hostname |
+| `VALKEY_PORT` | `6379` | Valkey server port |
+| `VALKEY_PING_MAX_RETRIES` | `5` | Ping retry attempts on startup |
+| `VALKEY_PING_RETRY_DELAY` | `2` | Seconds between ping retries |
 
 ## Image Samples
 
-### Supported Formats
+Place `.jpg`, `.jpeg`, or `.png` files in `data/sample/` (flat directory, no subdirectory traversal).
 
-The dataloader supports the following image file extensions:
+## Deployment
 
-- `.jpg`
-- `.jpeg`
-- `.png`
-
-### Where to Save
-
-Place image files in the `data/sample/` directory (the default data path). The directory structure should be flat — subdirectories are not currently traversed.
-
-```
-data/
-  sample/
-    image_001.png
-    image_002.jpg
-    scene_a.jpeg
-```
-
-## Deploying Packages Independently
-
-Each sub-package has its own `pyproject.toml` and can be installed on its own, without pulling in the entire repository. This allows different parts of the project to run on different devices or instances with only the dependencies they need.
-
-Examples: 
+For edge devices (Jetson, Raspberry Pi), build a release binary:
 
 ```bash
-# Commandline interface
-uv pip install -e "apps/bss_cli"
-
-# Core library only (e.g. on an edge device)
-uv pip install -e "packages/bss_core"
+make release
+# Binary at: target/release/bss-cli
 ```
+
+The binary is self-contained. Copy it alongside `configs/` and `models/` to the target device.
