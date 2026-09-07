@@ -1,0 +1,10 @@
+[package]
+name = "bss-core"
+description = "Core utilities for BehaviorSimilaritySearch."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+dotenvy = { workspace = true }
+thiserror = { workspace = true }

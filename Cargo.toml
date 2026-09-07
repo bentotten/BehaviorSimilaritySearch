@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bss-core",
+    "crates/bss-data",
+    "crates/bss-encoder",
+    "crates/bss-valkey",
+    "crates/bss-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+thiserror = "2.0"
+dotenvy = "0.15"

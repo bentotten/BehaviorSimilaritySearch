@@ -1,0 +1,8 @@
+[package]
+name = "bss-data"
+description = "Data loading for BehaviorSimilaritySearch."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
