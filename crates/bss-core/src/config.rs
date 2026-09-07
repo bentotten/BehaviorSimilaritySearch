@@ -101,10 +101,11 @@ pub fn load_config(path: &Path) -> Result<Config, ConfigError> {
 
     match path.extension().and_then(|ext| ext.to_str()) {
         Some("env") => {}
-        other => {
-            return Err(ConfigError::UnsupportedFormat(
-                other.unwrap_or("").to_string(),
-            ));
+        Some(extension) => {
+            return Err(ConfigError::UnsupportedFormat(format!(".{extension}")));
+        }
+        None => {
+            return Err(ConfigError::UnsupportedFormat("<no extension>".to_string()));
         }
     }
 

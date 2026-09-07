@@ -81,8 +81,6 @@ make down
 
 ## Running Tests
 
-Note: The only requirement is that **Docker must be available** on the host running the tests (including CI).
-
 ```bash
 # Run all tests
 make test

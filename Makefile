@@ -6,7 +6,7 @@ COMPOSE_ENV ?= configs/local.env
 # Build & Test
 # ---------------------------------------------------------------
 
-.PHONY: build test lint check-codestyle format ci clean
+.PHONY: build release test type-check lint check-codestyle format ci clean
 
 build:
 	cargo build --workspace
@@ -17,6 +17,9 @@ release:
 test:
 	cargo nextest run --workspace
 
+type-check:
+	cargo check --workspace
+
 lint:
 	cargo clippy --workspace -- -D warnings
 
@@ -26,7 +29,7 @@ check-codestyle:
 format:
 	cargo fmt --all
 
-ci: lint check-codestyle test
+ci: type-check lint check-codestyle test
 
 clean:
 	cargo clean

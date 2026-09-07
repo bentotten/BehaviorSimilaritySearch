@@ -41,15 +41,18 @@ fn applies_defaults_for_empty_env_file() {
 }
 
 #[test]
-fn loads_real_local_env_file() {
+fn loads_checked_in_local_env_file_without_error() {
+    // The checked-in config must parse cleanly. Specific values are not asserted
+    // here so that legitimate local edits to local.env do not break this test;
+    // default-value behaviour is covered by the unit tests.
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..");
-    let config =
-        load_config(&workspace_root.join("configs/local.env")).expect("should load local.env");
 
-    assert_eq!(config.valkey_host, "127.0.0.1");
-    assert_eq!(config.valkey_port, 6379);
-    assert_eq!(config.valkey_ping_max_retries, 5);
-    assert_eq!(config.valkey_ping_retry_delay_secs, 2);
+    let result = load_config(&workspace_root.join("configs/local.env"));
+
+    assert!(
+        result.is_ok(),
+        "local.env should load without error: {result:?}"
+    );
 }
 
 #[test]
