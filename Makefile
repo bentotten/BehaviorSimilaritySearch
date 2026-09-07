@@ -15,7 +15,7 @@ release:
 	cargo build --workspace --release
 
 test:
-	cargo test --workspace
+	cargo nextest run --workspace
 
 type-check:
 	cargo check --workspace

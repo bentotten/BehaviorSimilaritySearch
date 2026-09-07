@@ -33,6 +33,7 @@
 ## Prerequisites
 
 - [Rust](https://rustup.rs/) stable (1.80+)
+- [cargo-nextest](https://nexte.st/)
 - [Docker](https://docs.docker.com/get-docker/) with Compose v2
 - NVIDIA CUDA + TensorRT (optional — required for GPU acceleration)
 
@@ -40,6 +41,12 @@ Install Rust via rustup:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Install cargo-nextest:
+
+```bash
+cargo install cargo-nextest --locked
 ```
 
 ## Environment Setup
@@ -79,19 +86,9 @@ make down
 make test
 
 # Run tests for a specific crate
-cargo test --package bss-core
-
-# Run workspace integration tests
-cargo test --package bss-integration-tests
-
-# Run integration tests that require infrastructure (Valkey must be running via make up)
-cargo test --package bss-integration-tests -- --include-ignored
+cargo nextest run --package bss-core
 ```
 
-### Test Layout
-
-- **Per-crate tests** (`crates/*/tests/`): test each crate in isolation
-- **Workspace integration tests** (`crates/bss-integration-tests/tests/`): test cross-crate interactions and end-to-end workflows. Tests requiring live infrastructure are marked `#[ignore]` and must be run explicitly with `--include-ignored`.
 
 ## Documentation
 
@@ -105,10 +102,8 @@ Doc comments follow standard Rust conventions (`///` for public items, `//!` for
 
 ## Infrastructure
 
-Local infrastructure is managed with docker-compose. Configuration is loaded from `configs/local.env`.
-
 ```bash
-make up    # Start Valkey
+make up    # Start Valkey via docker compose file
 make down  # Stop Valkey
 ```
 

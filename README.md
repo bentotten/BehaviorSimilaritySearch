@@ -4,60 +4,47 @@ A computer vision system that detects whether specific behaviours are present in
 
 **Vision**: Multi-modal stream from the edge → encoder → Valkey VSS → confidence score, to determine if a set of data contains known behaviours. Behaviour embeddings are pre-loaded to Valkey.
 
+## Status
+
+This project is an early-stage Rust rewrite. Current state:
+
+| Crate | Status |
+|-------|--------|
+| `bss-core` | Config loading and shared error types implemented |
+| `bss-data` | Not yet implemented |
+| `bss-encoder` | Not yet implemented |
+| `bss-valkey` | Not yet implemented |
+| `bss-cli` | Not yet implemented |
+
+The sections below document what exists today. Usage, CLI, and deployment
+documentation will be added as those components are built.
+
+## Architecture
+
+```
+Edge device
+├── bss-cli          CLI entry point
+├── bss-encoder      ONNX Runtime inference (TensorRT / CUDA / CPU)
+├── bss-data         Image loading
+├── bss-valkey       Valkey client + vector similarity search
+└── bss-core         Config loading, shared error types
+```
+
+Inference backend is abstracted behind an `Encoder` trait, enabling a future migration from embedded ONNX/TensorRT to a Triton Inference Server without changing application code.
+
 ## Prerequisites
 
 - [Rust](https://rustup.rs/) stable (1.80+)
+- [cargo-nextest](https://nexte.st/) — test runner
 - [Docker](https://docs.docker.com/get-docker/) with Compose v2
 - NVIDIA CUDA + TensorRT (optional, for GPU acceleration on Jetson/NVIDIA hardware)
 
-## Installation and Setup
+## Build
 
 ```bash
 # Build all crates
 make build
-
-# Start Valkey
-make up
 ```
-
-## Usage
-
-```bash
-# Run the CLI
-cargo run --bin bss-cli -- --help
-
-# Bootstrap: initialize Valkey index, load images, encode, store vectors
-cargo run --bin bss-cli -- bootstrap
-
-# With custom paths
-cargo run --bin bss-cli -- --env-config configs/local.env --data-path data/sample bootstrap
-```
-
-### CLI Arguments
-
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `--env-config PATH` | Path to environment/connection config file | `configs/local.env` |
-| `--data-path PATH` | Path to directory containing image data | `data/sample` |
-
-### Subcommands
-
-| Command | Description |
-|---------|-------------|
-| `bootstrap` | Initialize search backend, encode images, and store vectors |
-
-## Model Setup
-
-Models must be exported from PyTorch to ONNX before use. Example for YOLOv8:
-
-```python
-from ultralytics import YOLO
-model = YOLO('yolov8n.pt')
-model.export(format='onnx', dynamic=False, simplify=True)
-# Copy the output to models/encoder.onnx
-```
-
-Place ONNX models in the `models/` directory. TensorRT engine files (`.engine`) are also supported.
 
 ## Development
 
@@ -74,6 +61,8 @@ Place ONNX models in the `models/` directory. TensorRT engine files (`.engine`) 
 | `make down` | Stop docker-compose services |
 | `make clean` | Remove build artifacts |
 
+See [DEVELOPMENT.md](DEVELOPMENT.md) for details.
+
 ## Configuration
 
 Connection settings are loaded from a `.env` file. Defaults:
@@ -89,13 +78,15 @@ Connection settings are loaded from a `.env` file. Defaults:
 
 Place `.jpg`, `.jpeg`, or `.png` files in `data/sample/` (flat directory, no subdirectory traversal).
 
-## Deployment
+## Model Setup
 
-For edge devices (Jetson, Raspberry Pi), build a release binary:
+Models must be exported from PyTorch to ONNX before use. Example for YOLOv8:
 
-```bash
-make release
-# Binary at: target/release/bss-cli
+```python
+from ultralytics import YOLO
+model = YOLO('yolov8n.pt')
+model.export(format='onnx', dynamic=False, simplify=True)
+# Copy the output to models/encoder.onnx
 ```
 
-The binary is self-contained. Copy it alongside `configs/` and `models/` to the target device.
+Place ONNX models in the `models/` directory. TensorRT engine files (`.engine`) are also supported.
