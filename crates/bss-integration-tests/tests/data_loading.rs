@@ -23,9 +23,11 @@ fn sample_data_dir() -> PathBuf {
 fn loads_cat_in_a_bucket_sample() {
     let sample_dir = sample_data_dir();
 
-    let samples = LocalDirectory::new(&sample_dir)
+    let samples: Vec<_> = LocalDirectory::new(&sample_dir)
         .load_data()
-        .expect("sample directory should load");
+        .expect("sample directory should load")
+        .collect::<Result<_, _>>()
+        .expect("all samples should read successfully");
 
     let cat = samples
         .iter()

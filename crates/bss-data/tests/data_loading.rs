@@ -3,7 +3,7 @@
 use std::fs;
 use std::path::Path;
 
-use bss_data::{DataError, DataSource, LocalDirectory};
+use bss_data::{DataError, DataSource, LocalDirectory, Sample};
 use tempfile::TempDir;
 
 /// Create a temp directory containing the given (name, contents) files.
@@ -15,26 +15,32 @@ fn dir_with_files(files: &[(&str, &[u8])]) -> TempDir {
     dir
 }
 
+/// Load all samples from a source into a vector, failing on the first error.
+fn load_all(source: &LocalDirectory) -> Result<Vec<Sample>, DataError> {
+    source.load_data()?.collect()
+}
+
+/// Collect sample ids, sorted, so assertions do not depend on iteration order.
+fn sorted_ids(samples: &[Sample]) -> Vec<&str> {
+    let mut ids: Vec<&str> = samples.iter().map(|sample| sample.id.as_str()).collect();
+    ids.sort_unstable();
+    ids
+}
+
 #[test]
 fn loads_supported_files_as_samples() {
     let dir = dir_with_files(&[("a.png", b"png-bytes"), ("b.jpg", b"jpg-bytes")]);
 
-    let samples = LocalDirectory::new(dir.path())
-        .load_data()
-        .expect("should load samples");
+    let samples = load_all(&LocalDirectory::new(dir.path())).expect("should load samples");
 
-    assert_eq!(samples.len(), 2);
-    let ids: Vec<&str> = samples.iter().map(|s| s.id.as_str()).collect();
-    assert_eq!(ids, ["a.png", "b.jpg"]);
+    assert_eq!(sorted_ids(&samples), ["a.png", "b.jpg"]);
 }
 
 #[test]
 fn preserves_raw_bytes() {
     let dir = dir_with_files(&[("frame.png", b"exact-bytes")]);
 
-    let samples = LocalDirectory::new(dir.path())
-        .load_data()
-        .expect("should load samples");
+    let samples = load_all(&LocalDirectory::new(dir.path())).expect("should load samples");
 
     assert_eq!(samples.len(), 1);
     assert_eq!(samples[0].data, b"exact-bytes"[..]);
@@ -49,44 +55,25 @@ fn filters_out_unsupported_files() {
         ("delta.jpeg", b"4"),
     ]);
 
-    let samples = LocalDirectory::new(dir.path())
-        .load_data()
-        .expect("should load samples");
+    let samples = load_all(&LocalDirectory::new(dir.path())).expect("should load samples");
 
-    let ids: Vec<&str> = samples.iter().map(|s| s.id.as_str()).collect();
-    assert_eq!(ids, ["alpha.png", "delta.jpeg"]);
+    assert_eq!(sorted_ids(&samples), ["alpha.png", "delta.jpeg"]);
 }
 
 #[test]
 fn matches_extensions_case_insensitively() {
     let dir = dir_with_files(&[("UPPER.PNG", b"1"), ("Mixed.Jpeg", b"2")]);
 
-    let samples = LocalDirectory::new(dir.path())
-        .load_data()
-        .expect("should load samples");
+    let samples = load_all(&LocalDirectory::new(dir.path())).expect("should load samples");
 
     assert_eq!(samples.len(), 2);
-}
-
-#[test]
-fn returns_samples_sorted_by_id() {
-    let dir = dir_with_files(&[("c.png", b"1"), ("a.png", b"2"), ("b.png", b"3")]);
-
-    let samples = LocalDirectory::new(dir.path())
-        .load_data()
-        .expect("should load samples");
-
-    let ids: Vec<&str> = samples.iter().map(|s| s.id.as_str()).collect();
-    assert_eq!(ids, ["a.png", "b.png", "c.png"]);
 }
 
 #[test]
 fn returns_empty_for_directory_with_no_supported_files() {
     let dir = dir_with_files(&[("bravo.txt", b"1"), ("data.bin", b"2")]);
 
-    let samples = LocalDirectory::new(dir.path())
-        .load_data()
-        .expect("should load samples");
+    let samples = load_all(&LocalDirectory::new(dir.path())).expect("should load samples");
 
     assert!(samples.is_empty());
 }
@@ -95,9 +82,7 @@ fn returns_empty_for_directory_with_no_supported_files() {
 fn returns_empty_for_empty_directory() {
     let dir = tempfile::tempdir().expect("failed to create temp dir");
 
-    let samples = LocalDirectory::new(dir.path())
-        .load_data()
-        .expect("should load samples");
+    let samples = load_all(&LocalDirectory::new(dir.path())).expect("should load samples");
 
     assert!(samples.is_empty());
 }
@@ -110,29 +95,34 @@ fn does_not_traverse_subdirectories() {
     fs::create_dir(&nested).expect("create dir");
     fs::write(nested.join("deep.png"), b"2").expect("write");
 
-    let samples = LocalDirectory::new(dir.path())
-        .load_data()
-        .expect("should load samples");
+    let samples = load_all(&LocalDirectory::new(dir.path())).expect("should load samples");
 
-    let ids: Vec<&str> = samples.iter().map(|s| s.id.as_str()).collect();
-    assert_eq!(ids, ["top.png"]);
+    assert_eq!(sorted_ids(&samples), ["top.png"]);
 }
 
 #[test]
 fn returns_source_not_found_for_missing_directory() {
-    let result = LocalDirectory::new("/nonexistent/path/to/data").load_data();
+    let source = LocalDirectory::new("/nonexistent/path/to/data");
 
-    assert!(matches!(result, Err(DataError::SourceNotFound { .. })));
+    let result = source.load_data();
+
+    assert!(matches!(
+        result.err(),
+        Some(DataError::SourceNotFound { .. })
+    ));
 }
 
 #[test]
 fn returns_source_not_found_when_path_is_a_file() {
     let dir = dir_with_files(&[("a.png", b"1")]);
-    let file_path = dir.path().join("a.png");
+    let source = LocalDirectory::new(dir.path().join("a.png"));
 
-    let result = LocalDirectory::new(&file_path).load_data();
+    let result = source.load_data();
 
-    assert!(matches!(result, Err(DataError::SourceNotFound { .. })));
+    assert!(matches!(
+        result.err(),
+        Some(DataError::SourceNotFound { .. })
+    ));
 }
 
 // Relies on Unix permission bits to make a file unreadable, only available
@@ -158,7 +148,7 @@ fn returns_read_error_for_unreadable_file() {
         return;
     }
 
-    let result = LocalDirectory::new(dir.path()).load_data();
+    let result = load_all(&LocalDirectory::new(dir.path()));
 
     assert!(matches!(
         result,
@@ -173,17 +163,12 @@ fn loads_checked_in_sample_directory() {
     // adding sample data does not break this test.
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..");
 
-    let samples = LocalDirectory::new(workspace_root.join("data/sample"))
-        .load_data()
-        .expect("should load sample directory");
+    let samples =
+        load_all(&LocalDirectory::new(workspace_root.join("data/sample"))).expect("should load");
 
-    assert!(
-        samples.iter().any(|s| s.id == "my_cat_in_a_bucket.jpeg"),
-        "expected the sample image to be loaded, got: {:?}",
-        samples.iter().map(|s| &s.id).collect::<Vec<_>>()
-    );
-    assert!(
-        !samples[0].data.is_empty(),
-        "loaded sample should contain bytes"
-    );
+    let cat = samples
+        .iter()
+        .find(|sample| sample.id == "my_cat_in_a_bucket.jpeg")
+        .expect("expected the sample image to be loaded");
+    assert!(!cat.data.is_empty(), "loaded sample should contain bytes");
 }

@@ -16,17 +16,23 @@ pub const SUPPORTED_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png"];
 
 /// A source of [`Sample`]s for bootstrapping.
 pub trait DataSource {
-    /// Load all supported samples from the source.
+    /// Return an iterator over the samples in the source.
     ///
-    /// Samples are returned sorted by [`Sample::id`] for deterministic ordering.
-    /// An empty source yields an empty vector rather than an error.
+    /// Samples are yielded lazily so that arbitrarily large sources can be
+    /// processed with bounded memory: the caller drives the iterator.
+    ///
+    /// # Notes
+    //  - Iteration order is unspecified.
     ///
     /// # Errors
     ///
     /// - [`DataError::SourceNotFound`] if the source location does not exist or
     ///   is not a valid source.
-    /// - [`DataError::ReadError`] if an individual item cannot be read.
-    fn load_data(&self) -> Result<Vec<Sample>, DataError>;
+    /// - [`DataError::ReadError`] (per item) if an individual sample cannot be
+    ///   read.
+    fn load_data(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = Result<Sample, DataError>> + '_>, DataError>;
 }
 
 /// A [`DataSource`] backed by a local filesystem directory.
@@ -47,7 +53,9 @@ impl LocalDirectory {
 }
 
 impl DataSource for LocalDirectory {
-    fn load_data(&self) -> Result<Vec<Sample>, DataError> {
+    fn load_data(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = Result<Sample, DataError>> + '_>, DataError> {
         if !self.root.is_dir() {
             return Err(DataError::SourceNotFound {
                 location: self.root.display().to_string(),
@@ -58,36 +66,39 @@ impl DataSource for LocalDirectory {
             location: format!("{}: {error}", self.root.display()),
         })?;
 
-        let mut samples = Vec::new();
-
-        for entry in entries {
-            let path = entry
-                .map_err(|error| DataError::ReadError {
-                    id: self.root.display().to_string(),
-                    reason: error.to_string(),
-                })?
-                .path();
-
-            if !is_supported_file(&path) {
-                warn!(path = %path.display(), "skipping unsupported file");
-                continue;
-            }
-
-            let id = file_id(&path);
-            let bytes = fs::read(&path).map_err(|error| DataError::ReadError {
-                id: id.clone(),
+        let samples = entries.filter_map(|entry| match entry {
+            Ok(entry) => read_supported_sample(&entry.path()),
+            Err(error) => Some(Err(DataError::ReadError {
+                id: String::new(),
                 reason: error.to_string(),
-            })?;
+            })),
+        });
 
-            samples.push(Sample {
-                id,
-                data: Bytes::from(bytes),
-            });
-        }
-
-        samples.sort_by(|a, b| a.id.cmp(&b.id));
-        Ok(samples)
+        Ok(Box::new(samples))
     }
+}
+
+/// Read a single sample from a path, or `None` if it is not a supported file.
+///
+/// Returns `Some(Err(..))` when a supported file exists but cannot be read.
+fn read_supported_sample(path: &Path) -> Option<Result<Sample, DataError>> {
+    if !is_supported_file(path) {
+        warn!(path = %path.display(), "skipping unsupported file");
+        return None;
+    }
+
+    let id = file_id(path);
+    let sample = fs::read(path)
+        .map(|bytes| Sample {
+            id: id.clone(),
+            data: Bytes::from(bytes),
+        })
+        .map_err(|error| DataError::ReadError {
+            id,
+            reason: error.to_string(),
+        });
+
+    Some(sample)
 }
 
 fn is_supported_file(path: &Path) -> bool {
