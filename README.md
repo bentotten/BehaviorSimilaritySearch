@@ -10,14 +10,11 @@ This project is an early-stage Rust rewrite. Current state:
 
 | Crate | Status |
 |-------|--------|
-| `bss-core` | Config loading and shared error types implemented |
+| `bss-core` | Implemented |
 | `bss-data` | Not yet implemented |
 | `bss-encoder` | Not yet implemented |
 | `bss-valkey` | Not yet implemented |
 | `bss-cli` | Not yet implemented |
-
-The sections below document what exists today. Usage, CLI, and deployment
-documentation will be added as those components are built.
 
 ## Architecture
 
@@ -29,8 +26,6 @@ Edge device
 ├── bss-valkey       Valkey client + vector similarity search
 └── bss-core         Config loading, shared error types
 ```
-
-Inference backend is abstracted behind an `Encoder` trait, enabling a future migration from embedded ONNX/TensorRT to a Triton Inference Server without changing application code.
 
 ## Prerequisites
 
@@ -84,9 +79,17 @@ Models must be exported from PyTorch to ONNX before use. Example for YOLOv8:
 
 ```python
 from ultralytics import YOLO
-model = YOLO('yolov8n.pt')
-model.export(format='onnx', dynamic=False, simplify=True)
-# Copy the output to models/encoder.onnx
-```
 
-Place ONNX models in the `models/` directory. TensorRT engine files (`.engine`) are also supported.
+model = YOLO("yolov8n.pt")
+model.export(format="onnx", dynamic=False, simplify=True)
+```
+Copy the output to models/encoder.onnx. TensorRT engine files (`.engine`) are also supported.
+
+
+## Deployment
+```bash
+make release
+```
+Binary location: target/release/<build_target>
+
+The binary is statically linked. Copy it alongside `configs/` and `models/` to the target device.
