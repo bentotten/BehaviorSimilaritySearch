@@ -11,7 +11,7 @@ This project is an early-stage Rust rewrite. Current state:
 | Crate | Status |
 |-------|--------|
 | `bss-core` | Implemented |
-| `bss-data` | Not yet implemented |
+| `bss-data` | Implemented |
 | `bss-encoder` | Not yet implemented |
 | `bss-valkey` | Not yet implemented |
 | `bss-cli` | Not yet implemented |
