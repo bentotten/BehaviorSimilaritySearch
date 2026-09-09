@@ -19,3 +19,5 @@ thiserror = "2.0"
 dotenvy = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 envy = "0.4"
+bytes = "1.12"
+tracing = "0.1"
