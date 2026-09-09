@@ -3,6 +3,7 @@
 use std::path::Path;
 
 use serde::Deserialize;
+use tracing::info;
 
 use crate::error::ConfigError;
 
@@ -35,6 +36,10 @@ fn default_valkey_ping_retry_delay_secs() -> u64 {
 }
 
 /// Runtime configuration.
+///
+/// Note: `load_config` logs these fields individually. If a secret field
+/// (password, token, etc.) is ever added, it must not be included in that log
+/// statement.
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Config {
     /// Valkey server hostname or IP address.
@@ -125,7 +130,21 @@ pub fn load_config(path: &Path) -> Result<Config, ConfigError> {
         pairs.push((key, value));
     }
 
-    parse_config(pairs)
+    let config = parse_config(pairs)?;
+
+    // Fields are logged individually rather than dumping the whole struct.
+    // NEVER log a secret field here (passwords, tokens, etc.); any new secret
+    // must be omitted from this statement deliberately.
+    info!(
+        path = %path.display(),
+        valkey_host = %config.valkey_host,
+        valkey_port = config.valkey_port,
+        valkey_ping_max_retries = config.valkey_ping_max_retries,
+        valkey_ping_retry_delay_secs = config.valkey_ping_retry_delay_secs,
+        "loaded configuration"
+    );
+
+    Ok(config)
 }
 
 #[cfg(test)]
