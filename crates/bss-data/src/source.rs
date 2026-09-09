@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use bytes::Bytes;
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::error::DataError;
 use crate::sample::Sample;
@@ -28,6 +28,8 @@ pub trait DataSource {
     ///
     /// - [`DataError::SourceNotFound`] if the source location does not exist or
     ///   is not a valid source.
+    /// - [`DataError::SourceUnreadable`] if the source exists but its contents
+    ///   cannot be enumerated.
     /// - [`DataError::ReadError`] (per item) if an individual sample cannot be
     ///   read.
     fn load_data(
@@ -56,21 +58,25 @@ impl DataSource for LocalDirectory {
     fn load_data(
         &self,
     ) -> Result<Box<dyn Iterator<Item = Result<Sample, DataError>> + '_>, DataError> {
+        // The is_dir check and the read_dir below are not atomic: the directory
+        // could change in between. This is acceptable for a local, single-reader
+        // source and is not relied upon as an invariant.
         if !self.root.is_dir() {
             return Err(DataError::SourceNotFound {
                 location: self.root.display().to_string(),
             });
         }
 
-        let entries = fs::read_dir(&self.root).map_err(|error| DataError::SourceNotFound {
-            location: format!("{}: {error}", self.root.display()),
+        let entries = fs::read_dir(&self.root).map_err(|error| DataError::SourceUnreadable {
+            location: self.root.display().to_string(),
+            source: error,
         })?;
 
         let samples = entries.filter_map(|entry| match entry {
             Ok(entry) => read_supported_sample(&entry.path()),
             Err(error) => Some(Err(DataError::ReadError {
                 id: String::new(),
-                reason: error.to_string(),
+                source: error,
             })),
         });
 
@@ -78,12 +84,21 @@ impl DataSource for LocalDirectory {
     }
 }
 
-/// Read a single sample from a path, or `None` if it is not a supported file.
+/// Read a single sample from a path, or `None` if the path is not a loadable
+/// sample and should be skipped.
 ///
 /// Returns `Some(Err(..))` when a supported file exists but cannot be read.
 fn read_supported_sample(path: &Path) -> Option<Result<Sample, DataError>> {
-    if !is_supported_file(path) {
-        warn!(path = %path.display(), "skipping unsupported file");
+    if !has_supported_extension(path) {
+        debug!(path = %path.display(), "skipping file with unsupported extension");
+        return None;
+    }
+
+    // A path with a supported extension that is not a regular file (a directory,
+    // or a symlink whose target is missing) is worth surfacing, since it looks
+    // loadable but is not.
+    if !path.is_file() {
+        warn!(path = %path.display(), "skipping supported extension that is not a regular file");
         return None;
     }
 
@@ -93,16 +108,9 @@ fn read_supported_sample(path: &Path) -> Option<Result<Sample, DataError>> {
             id: id.clone(),
             data: Bytes::from(bytes),
         })
-        .map_err(|error| DataError::ReadError {
-            id,
-            reason: error.to_string(),
-        });
+        .map_err(|error| DataError::ReadError { id, source: error });
 
     Some(sample)
-}
-
-fn is_supported_file(path: &Path) -> bool {
-    path.is_file() && has_supported_extension(path)
 }
 
 fn has_supported_extension(path: &Path) -> bool {
@@ -115,8 +123,10 @@ fn has_supported_extension(path: &Path) -> bool {
     }
 }
 
-// Falls back to the full path when a file name cannot be extracted, so every
-// sample retains a usable identifier.
+/// Derive a [`Sample`] id from a path.
+///
+/// Falls back to the full path when a file name cannot be extracted, so every
+/// sample retains a usable identifier.
 fn file_id(path: &Path) -> String {
     path.file_name()
         .and_then(|name| name.to_str())
