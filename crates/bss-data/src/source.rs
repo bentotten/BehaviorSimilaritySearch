@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use bytes::Bytes;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use crate::error::DataError;
 use crate::sample::Sample;
@@ -73,6 +73,11 @@ impl DataSource for LocalDirectory {
         })?;
 
         let location = self.root.display().to_string();
+        info!(source = %location, "loading samples from local directory");
+
+        // Samples are yielded lazily, so the total count is only known once the
+        // caller has drained the iterator; the caller is responsible for any
+        // completion summary.
         let samples = entries.filter_map(move |entry| match entry {
             Ok(entry) => read_supported_sample(&entry.path()),
             // A directory entry that fails to resolve is an enumeration failure,
