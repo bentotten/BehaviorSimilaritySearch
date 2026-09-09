@@ -22,7 +22,7 @@ pub trait DataSource {
     /// processed with bounded memory: the caller drives the iterator.
     ///
     /// # Notes
-    //  - Iteration order is unspecified.
+    ///  - Iteration order is unspecified.
     ///
     /// # Errors
     ///
@@ -72,10 +72,14 @@ impl DataSource for LocalDirectory {
             source: error,
         })?;
 
-        let samples = entries.filter_map(|entry| match entry {
+        let location = self.root.display().to_string();
+        let samples = entries.filter_map(move |entry| match entry {
             Ok(entry) => read_supported_sample(&entry.path()),
-            Err(error) => Some(Err(DataError::ReadError {
-                id: String::new(),
+            // A directory entry that fails to resolve is an enumeration failure,
+            // not a failure to read a specific item, so report it against the
+            // source rather than a nonexistent item id.
+            Err(error) => Some(Err(DataError::SourceUnreadable {
+                location: location.clone(),
                 source: error,
             })),
         });
